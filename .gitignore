@@ -1,5 +1,5 @@
 # SQLite database files
 DB/*.db
-
+*.db
 # macOS Finder
 .DS_Store
