@@ -10,6 +10,8 @@ SessionLocal = sessionmaker(bind=_engine)
 
 def init_db():
     """Initialize the database, create tables if missing, and migrate schema for new columns."""
+    # Ensure the database directory exists
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     from . import models  # ensure Product table metadata is loaded
     Base.metadata.create_all(_engine)
     # Migrate existing table to include new columns
