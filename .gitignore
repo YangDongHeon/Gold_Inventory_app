@@ -1,0 +1,11 @@
+# Byte-compiled / cache files
+__pycache__/
+*/__pycache__/
+*.py[cod]
+*.pyc
+
+# SQLite database files
+DB/*.db
+
+# macOS Finder
+.DS_Store
