@@ -3,3 +3,4 @@ gold_data.db
 gold_inventory_app/.DS_Store
 gold_inventory_app/icons/.DS_Store
 gold_inventory_app/__pycache__/
+DB/*.db
