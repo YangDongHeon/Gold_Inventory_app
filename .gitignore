@@ -1,1 +1,5 @@
 gold_data.db
+.DS_Store
+gold_inventory_app/.DS_Store
+gold_inventory_app/icons/.DS_Store
+gold_inventory_app/__pycache__/
