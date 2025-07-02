@@ -1,6 +1,7 @@
 import sys, json
 from pathlib import Path
 from typing import Dict
+import shutil
 from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QPixmap, QIcon, QFont
 # from PyQt5.QtWidgets ... (unchanged)
@@ -10,8 +11,27 @@ from PyQt5.QtWidgets import (
     QTabWidget, QTableWidget, QTableWidgetItem, QAbstractItemView, QHeaderView, QCheckBox, QSizePolicy, QAbstractSpinBox
 )
 # Additional imports for DetailDialog
-from .models import Product
+from models import Product
 from PyQt5.QtWidgets import QDialog, QFormLayout
+from config import app_base_dir, app_resource_path
+# ─── Paths ──────────────────────────────────────────────────────────
+PROJECT_ROOT = Path(app_base_dir())        # <project root> resolved by your helper
+IMAGES_DIR   = PROJECT_ROOT / "images"
+IMAGES_DIR.mkdir(exist_ok=True)            # create once if it doesn't exist
+
+def join2(a: str, b: str) -> str:
+    a = a.strip(); b = b.strip()
+    return f"{a}/{b}" if a or b else ""
+
+def split2(s: str) -> tuple[str, str]:
+    if "/" in s:
+        left, right = s.split("/", 1)
+        return left.strip(), right.strip()
+    return s.strip(), ""
+
+def _fmt_slash(val: str) -> str:
+    return val.replace("/", "\n") if val else val
+
 class DetailDialog(QDialog):
     """Custom dialog for clearer, more readable product details."""
     def __init__(self, parent, product: Product):
@@ -47,18 +67,21 @@ class DetailDialog(QDialog):
         font_bold.setBold(True)
         # List of (label, value)
         fields = [
-            ("품목", product.category),
-            ("함량", product.karat),
-            ("중량", f"{product.weight_g} g"),
-            ("공임", f"₩{product.labor_cost1:,.0f} / ₩{product.labor_cost2:,.0f}"),
-            ("사이즈", product.size),
-            ("QB합계", product.total_qb_qty),
-            ("세트번호", product.set_no),
-            ("단종", "Y" if product.discontinued else "N"),
-            ("재고", product.stock_qty),
-            ("매입처", f"{product.supplier_name} ({product.supplier_item_no})"),
-            ("상품코드", product.product_code),
-            ("비고", product.notes or "-"),
+            ("품목",              product.category), 
+            ("매입처(매입처상품번호)", f"{product.supplier_name} ({product.supplier_item_no})"),        
+            ("상품명(상품번호)",  f"{product.name} ({product.product_code})"),
+            ("함량",              product.karat),                 
+            ("중량",              f"{product.weight_g} g"),       
+            ("사이즈",            product.size),                 
+            ("총QB수량",          product.total_qb_qty),      
+            ("기/추",             product.basic_extra),        
+            ("중/보 물림",        product.mid_back_bulim),    
+            ("중/보 공임",        product.mid_back_labor),      
+            ("큐빅 공임",         product.cubic_labor),        
+            ("총공임",            product.total_labor),     
+            ("단종",              "Y" if product.discontinued else "N"), 
+            ("재고",              product.stock_qty),           
+            ("비고",              product.notes or "-"),
         ]
         for key, val in fields:
             lbl_key = QLabel(f"{key}:")
@@ -66,14 +89,16 @@ class DetailDialog(QDialog):
             lbl_val = QLabel(str(val))
             form.addRow(lbl_key, lbl_val)
         main_layout.addLayout(form)
-        # ─── Bottom: OK Button ────────────────
+
+        # ─── Button goes inside the *left* (image) column ─────────
         btn_ok = QPushButton("닫기")
         btn_ok.clicked.connect(self.accept)
-        main_layout.addWidget(btn_ok, alignment=Qt.AlignBottom)
+        img_layout.addStretch()                   # push button to bottom if images are short
+        img_layout.addWidget(btn_ok, alignment=Qt.AlignHCenter)
 # Ensure QApplication is imported for combo box style setting
 from PyQt5.QtWidgets import QApplication
-from .db import DataManager
-from .models import Product
+from db import DataManager
+from models import Product
 from functools import partial 
 
 class ProductDialog(QDialog):
@@ -100,10 +125,18 @@ class ProductDialog(QDialog):
         self.qb_edit = QLineEdit()
         self.qb_edit.setPlaceholderText("총QB수량")
 
-        self.labor1_spin = QDoubleSpinBox(); self.labor1_spin.setMaximum(1_000_000_000); self.labor1_spin.setPrefix("₩ ")
-        self.labor2_spin = QDoubleSpinBox(); self.labor2_spin.setMaximum(1_000_000_000); self.labor2_spin.setPrefix("₩ ")
+        self.basic_left  = QLineEdit(); self.basic_left.setPlaceholderText("기본")
+        self.basic_right = QLineEdit(); self.basic_right.setPlaceholderText("추가")
+        basic_box = QHBoxLayout(); basic_box.addWidget(self.basic_left); basic_box.addWidget(QLabel("/")); basic_box.addWidget(self.basic_right)
+        self.bulim_left  = QLineEdit(); self.bulim_left.setPlaceholderText("중앙")
+        self.bulim_right = QLineEdit(); self.bulim_right.setPlaceholderText("보조")
+        bulim_box = QHBoxLayout(); bulim_box.addWidget(self.bulim_left); bulim_box.addWidget(QLabel("/")); bulim_box.addWidget(self.bulim_right)
+        self.labor_left  = QLineEdit(); self.labor_left.setPlaceholderText("중앙")
+        self.labor_right = QLineEdit(); self.labor_right.setPlaceholderText("보조")
+        labor_box = QHBoxLayout(); labor_box.addWidget(self.labor_left); labor_box.addWidget(QLabel("/")); labor_box.addWidget(self.labor_right)
+        self.cubic_labor_edit    = QLineEdit()
+        self.total_labor_edit    = QLineEdit()
 
-        self.set_no_edit = QLineEdit()
         self.discontinued_cb = QComboBox(); self.discontinued_cb.addItems(["N","Y"])
         self.stock_spin = QSpinBox(); self.stock_spin.setMaximum(100000)
 
@@ -126,9 +159,11 @@ class ProductDialog(QDialog):
         layout.addRow("중량", self.weight_spin)
         layout.addRow("사이즈", self.size_edit)
         layout.addRow("총QB수량", self.qb_edit)
-        layout.addRow("기본공임1", self.labor1_spin)
-        layout.addRow("물림(추가공임)", self.labor2_spin)
-        layout.addRow("세트번호", self.set_no_edit)
+        layout.addRow("기/추",        basic_box)
+        layout.addRow("중/보 물림",    bulim_box)
+        layout.addRow("중/보 공임",    labor_box)
+        layout.addRow("큐빅 공임",      self.cubic_labor_edit)
+        layout.addRow("총공임",         self.total_labor_edit)
         layout.addRow("단종", self.discontinued_cb)
         layout.addRow("재고수량", self.stock_spin)
         layout.addRow("대표 이미지", img_layout)
@@ -155,9 +190,21 @@ class ProductDialog(QDialog):
         self.weight_spin.setValue(p.weight_g)
         self.size_edit.setText(p.size)
         self.qb_edit.setText(str(p.total_qb_qty))
-        self.labor1_spin.setValue(p.labor_cost1)
-        self.labor2_spin.setValue(p.labor_cost2)
-        self.set_no_edit.setText(p.set_no)
+
+        left, right = split2(p.basic_extra)
+        self.basic_left.setText(left)
+        self.basic_right.setText(right)
+
+        left, right = split2(p.mid_back_bulim)
+        self.bulim_left.setText(left)
+        self.bulim_right.setText(right)
+
+        left, right = split2(p.mid_back_labor)
+        self.labor_left.setText(left)
+        self.labor_right.setText(right)
+
+        self.cubic_labor_edit.setText(p.cubic_labor)
+        self.total_labor_edit.setText(p.total_labor)
         self.discontinued_cb.setCurrentText("Y" if p.discontinued else "N")
         self.stock_spin.setValue(p.stock_qty)
         self.img_path_edit.setText(p.image_path)
@@ -168,6 +215,35 @@ class ProductDialog(QDialog):
         path, _ = QFileDialog.getOpenFileName(self, "이미지 선택", "", "Images (*.png *.jpg *.jpeg)")
         if path: self.img_path_edit.setText(path)
 
+    def _import_image(self, src_path: str) -> str:
+        """
+        Copy *src_path* into <project>/images and return the destination
+        path that should be written to the DB.  If the file is already in
+        that folder, nothing is copied.
+        """
+        if not src_path:
+            return ""
+
+        src = Path(src_path).resolve()
+        if not src.exists():
+            return str(src)              # defensive--store what we got
+
+        # Already inside images folder?
+        if src.parent == IMAGES_DIR.resolve():
+            return str(src)
+
+        # Pick a non-colliding filename
+        dest = IMAGES_DIR / src.name
+        if dest.exists():
+            base, ext = src.stem, src.suffix
+            i = 1
+            while (IMAGES_DIR / f"{base}_{i}{ext}").exists():
+                i += 1
+            dest = IMAGES_DIR / f"{base}_{i}{ext}"
+
+        shutil.copy2(src, dest)          # copy with metadata
+        return str(dest)                 # absolute; make relative if you prefer
+
     def get_product(self) -> Product | None:
         if self.exec_() != QDialog.Accepted: return None
         if not self.name_edit.text().strip():
@@ -175,6 +251,9 @@ class ProductDialog(QDialog):
         
         cat_txt  = self.category_cb.currentText()
         category = cat_txt.split()[0] if cat_txt else ""
+
+        raw_img_path = self.img_path_edit.text().strip()
+        stored_img_path = self._import_image(raw_img_path)
 
         return Product(
             id=self.product.id if self.product else None,
@@ -187,12 +266,14 @@ class ProductDialog(QDialog):
             weight_g=self.weight_spin.value(),
             size=self.size_edit.text().strip(),
             total_qb_qty=self.qb_edit.text().strip(),
-            labor_cost1=self.labor1_spin.value(),
-            labor_cost2=self.labor2_spin.value(),
-            set_no=self.set_no_edit.text().strip(),
+            basic_extra     = join2(self.basic_left.text(),  self.basic_right.text()),
+            mid_back_bulim  = join2(self.bulim_left.text(),  self.bulim_right.text()),
+            mid_back_labor  = join2(self.labor_left.text(),  self.labor_right.text()),
+            cubic_labor     = self.cubic_labor_edit.text().strip(),
+            total_labor     = self.total_labor_edit.text().strip(),
             discontinued=self.discontinued_cb.currentText()=="Y",
             stock_qty=self.stock_spin.value(),
-            image_path=self.img_path_edit.text().strip(),
+            image_path=stored_img_path,
             extra_images=[],
             notes=self.notes_edit.toPlainText(),
             is_favorite=self.favorite_chk.isChecked()
@@ -201,17 +282,18 @@ class ProductDialog(QDialog):
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
+        self.IMG_SIDE   = 80    
+        self.CELL_HEIGHT = self.IMG_SIDE
+        self.IMAGE_SIZE  = 300 
         self._init_icons()
         self.setWindowTitle("GOLD MANAGER")
-        self.resize(1200,700)
         self.data = DataManager()
-        self.IMAGE_MAX = 200  # max width/height for image cells
         self._build_ui()
         self.load_products()
 
     def _init_icons(self):
         from PyQt5.QtCore import Qt
-        icon_dir = Path(__file__).parent / "icons"
+        icon_dir = Path(app_resource_path('./src/icons'))
 
         def _scaled_icon(path: Path, size: int = 24) -> QIcon:
             pm = QPixmap(str(path)).scaled(
@@ -224,22 +306,28 @@ class MainWindow(QMainWindow):
         self.EDIT_IC  = _scaled_icon(icon_dir / "pencil.png")
 
     def _apply_column_widths(self):
-        """고정 폭 열(이미지/버튼) 재지정 + 상품명 열 스트레치"""
+        """이미지 열은 고정폭, 나머지는 내용 길이대로 자동 폭"""
         hdr = self.table.horizontalHeader()
-        image_col = 1
-        fav_col = self.table.columnCount() - 2
+        img_col  = 1
+        name_col = 5
+        fav_col  = self.table.columnCount() - 2
         edit_col = self.table.columnCount() - 1
-        for col, w in (
-            (image_col, 140),
-            (fav_col, 80),
-            (edit_col, 40)
+        # ── 고정폭 열 ──────────────────────────
+        for col, width in (
+            (img_col,  self.IMG_SIDE + 6),   # 이미지 + padding
+            (fav_col,  90),
+            (edit_col, 40),
         ):
             hdr.setSectionResizeMode(col, QHeaderView.Fixed)
-            self.table.setColumnWidth(col, w)
-        # Do not stretch the last (수정) column; instead let the 이미지 column expand
+            self.table.setColumnWidth(col, width)
+        # ── 나머지 열 : 내용 길이에 따라 폭 조정 ──
+        for col in range(self.table.columnCount()):
+            if col == name_col:
+                hdr.setSectionResizeMode(col, QHeaderView.Stretch)
+            elif col not in (img_col, fav_col, edit_col):
+                hdr.setSectionResizeMode(col, QHeaderView.ResizeToContents)
+        # 마지막 열이 임의로 늘어나는 것 방지 (Stretch 대상은 상품명만)
         hdr.setStretchLastSection(False)
-        # 이미지 column (index 1) takes all extra horizontal space
-        hdr.setSectionResizeMode(image_col, QHeaderView.Stretch)
 
     def _build_ui(self):
         central = QWidget(); vbox = QVBoxLayout(central)
@@ -260,7 +348,6 @@ class MainWindow(QMainWindow):
         sup_no = QLineEdit(); sup_no.setPlaceholderText("매입처상품번호"); self.f_widgets["supplier_item_no"]=sup_no; search_h.addWidget(sup_no)
         name_edit = QLineEdit(); name_edit.setPlaceholderText("상품명"); self.f_widgets["name"]=name_edit; search_h.addWidget(name_edit)
         code_edit = QLineEdit(); code_edit.setPlaceholderText("상품번호"); self.f_widgets["product_code"]=code_edit; search_h.addWidget(code_edit)
-        set_edit = QLineEdit(); set_edit.setPlaceholderText("세트번호"); self.f_widgets["set_no"]=set_edit; search_h.addWidget(set_edit)
         
         disc_cb = QComboBox(); disc_cb.addItems(["","Y","N"])
         disc_cb.setEditable(True)
@@ -410,16 +497,20 @@ class MainWindow(QMainWindow):
         # 이미지 리스트
 
         self.image_list.setViewMode(QListWidget.IconMode)
-        self.image_list.setIconSize(QSize(200,200))
+        self.image_list.setIconSize(QSize(self.IMAGE_SIZE,self.IMAGE_SIZE))
         self.image_list.setSpacing(15)
-        self.image_list.itemClicked.connect(self._show_popup)
+        self.image_list.itemDoubleClicked.connect(self._show_popup)
         self.tabs.addTab(self.image_list, "이미지")
 
         self.table = QTableWidget()
+        self.table.setWordWrap(True)
+        self.table.setTextElideMode(Qt.ElideNone)
+        self.table.verticalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+
         # Dynamically set column count and headers
         headers = [
-            "ID","이미지","품목","매입처","매입처상품번호","상품번호","함량","중량(g)","사이즈",
-            "총QB수량","기본공임","물림(추가공임)","세트번호","단종","재고",
+            "ID","이미지","품목","매입처","매입처상품번호","상품명","상품번호","함량","중량(g)","사이즈",
+            "총QB수량","기/추","중/보 물림","중/보 공임","큐빅 공임","총공임","단종","재고",
             "즐겨찾기","수정"
         ]
         self.table.setColumnCount(len(headers))
@@ -440,9 +531,8 @@ class MainWindow(QMainWindow):
         # The following widths will be overridden in _apply_column_widths()
         header.setStretchLastSection(False)
         # Set row height to accommodate 120px-tall images plus 20px vertical padding
-        IMAGE_CELL_HEIGHT = 200
-        ROW_PADDING = 10
-        self.table.verticalHeader().setDefaultSectionSize(IMAGE_CELL_HEIGHT + ROW_PADDING)
+        ROW_PADDING = 6
+        self.table.verticalHeader().setDefaultSectionSize(self.CELL_HEIGHT + ROW_PADDING)
         # Keep rows at a fixed height to prevent collapse
         self.table.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)
         self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
@@ -504,8 +594,8 @@ class MainWindow(QMainWindow):
         # ---------- 목록 탭 ----------
         self.table.clear()
         headers = [
-            "ID","이미지","품목","매입처","매입처상품번호","상품번호","함량","중량(g)","사이즈",
-            "총QB수량","기본공임","물림(추가공임)","세트번호","단종","재고",
+            "ID","이미지","품목","매입처","매입처상품번호","상품명","상품번호","함량","중량(g)","사이즈",
+            "총QB수량","기/추","중/보 물림","중/보 공임","큐빅 공임","총공임","단종","재고",
             "즐겨찾기","수정"
         ]
         self.table.setColumnCount(len(headers))
@@ -525,14 +615,17 @@ class MainWindow(QMainWindow):
                 category_kor,                          # 품목
                 p.supplier_name,                       # 매입처
                 p.supplier_item_no,                    # 매입처상품번호
+                p.name,                                # 상품명
                 p.product_code,                        # 상품번호
                 p.karat,                               # 함량
                 p.weight_g,                            # 중량(g)
                 p.size,                                # 사이즈
                 p.total_qb_qty,                        # 총QB수량 (now string, no formatting)
-                locale.format_string("%d", p.labor_cost1, grouping=True),  # 기본공임1
-                locale.format_string("%d", p.labor_cost2, grouping=True),  # 물림(추가공임)
-                p.set_no,                              # 세트번호
+                _fmt_slash(p.basic_extra),      # ← 3000\n5000
+                _fmt_slash(p.mid_back_bulim),
+                _fmt_slash(p.mid_back_labor),
+                p.cubic_labor,
+                p.total_labor,
                 "Y" if p.discontinued else "N",        # 단종
                 p.stock_qty                            # 재고
             ]
@@ -545,7 +638,7 @@ class MainWindow(QMainWindow):
             # 이미지 셀: QLabel 위젯으로 추가하여 stretch 가능, 120x120 정사각형 셀 유지 (패딩)
             if p.image_path and Path(p.image_path).exists():
                 # create a fixed-size square container
-                size = 200
+                size = self.CELL_HEIGHT
                 lbl = QLabel()
                 lbl.setFixedSize(size, size)
                 lbl.setAlignment(Qt.AlignCenter)
@@ -588,7 +681,15 @@ class MainWindow(QMainWindow):
 
 
         self.table.resizeColumnsToContents()
+        self.table.resizeRowsToContents()
         self._apply_column_widths()
+
+        # 이미지가 있는 행은 최소 IMG_SIDE 확보
+        min_h = self.IMG_SIDE + 6
+        for r in range(self.table.rowCount()):
+            if self.table.rowHeight(r) < min_h:
+                self.table.setRowHeight(r, min_h)
+
         self.table.setColumnHidden(0, True)
 
 
@@ -608,13 +709,15 @@ class MainWindow(QMainWindow):
         self.load_products({"is_favorite": "1"})
 
     def _table_click(self, row, col):
-        # 단건 클릭에서는 즐겨찾기 / 수정 버튼만 처리
-        pid = int(self.table.item(row,0).data(Qt.UserRole))
-        if col == 16:      # ★ 버튼
+        pid = int(self.table.item(row, 0).data(Qt.UserRole))
+
+        fav_col  = self.table.columnCount() - 2
+        edit_col = self.table.columnCount() - 1
+
+        if col == fav_col:          # ★
             self._toggle_fav_cell(pid)
-        elif col == 17:    # ✎ 버튼
+        elif col == edit_col:       # ✎
             self._edit(pid_override=pid)
-        # 그 외는 선택만 하고 아무 동작 안 함
 
     def _row_dbl_clicked(self, item: QTableWidgetItem):
         """행 더블‑클릭 → 상세 팝업"""
@@ -701,7 +804,7 @@ def launch_app():
     app.setStyle("fusion")          # 기본 Fusion 라이트
     _set_light_palette(app)         # 라이트 팔레트 설정
 
-    app.setFont(QFont("맑은 고딕", 14))
+    app.setFont(QFont("맑은 고딕", 12))
     w = MainWindow()
-    w.show()
+    w.showMaximized()
     sys.exit(app.exec_())

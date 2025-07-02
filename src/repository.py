@@ -1,6 +1,6 @@
 from typing import List, Optional, Dict
-from .db import SessionLocal, init_db
-from .models import Product
+from db import SessionLocal, init_db
+from models import Product
 
 class ProductRepository:
     """Repository for CRUD operations on products."""

@@ -1,5 +1,20 @@
 # SQLite database files
 DB/*.db
 *.db
+
+#images
+images/
+
 # macOS Finder
 .DS_Store
+
+# Virtual environment folder
+gold_app/
+
+# Build and distribution folders
+build/
+dist/
+
+# Executable and spec files
+*.exe
+*.spec
