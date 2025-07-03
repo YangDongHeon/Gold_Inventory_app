@@ -1,8 +1,9 @@
 from pathlib import Path
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, func
 from sqlalchemy.orm import sessionmaker, declarative_base
 from config import DB_PATH
 from typing import Optional
+import datetime
 
 Base = declarative_base()
 _engine = create_engine(f'sqlite:///{DB_PATH}', echo=False, connect_args={'check_same_thread': False})
@@ -12,7 +13,7 @@ def init_db():
     """Initialize the database, create tables if missing, and migrate schema for new columns."""
     # Ensure the database directory exists
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    import models  # ensure Product table metadata is loaded
+    import models  # ensure Product and SalesRecord table metadata is loaded
     Base.metadata.create_all(_engine)
     # Migrate existing table to include new columns
     with _engine.connect() as conn:
@@ -26,10 +27,21 @@ def init_db():
             ("mid_back_labor", "TEXT", "''"),
             ("cubic_labor",    "TEXT", "''"),
             ("total_labor",    "TEXT", "''"),
+            # SalesRecord fields
+            # will add to sales_records table
+            ("basic_extra",    "TEXT", "''"),
+            ("mid_back_bulim", "TEXT", "''"),
         ]
+        # Only apply to products table
         for name, ctype, default in migration_columns:
-            if name not in cols:
+            if name not in cols and name not in ("basic_extra", "mid_back_bulim"):
                 conn.exec_driver_sql(f"ALTER TABLE products ADD COLUMN {name} {ctype} DEFAULT {default}")
+        # Migrate sales_records table for new columns
+        existing_sr = conn.exec_driver_sql("PRAGMA table_info(sales_records)").fetchall()
+        cols_sr = [row[1] for row in existing_sr]
+        for name, ctype, default in [("basic_extra", "TEXT", "''"), ("mid_back_bulim", "TEXT", "''")]:
+            if name not in cols_sr:
+                conn.exec_driver_sql(f"ALTER TABLE sales_records ADD COLUMN {name} {ctype} DEFAULT {default}")
 
 class DataManager:
     """Handles database operations using SQLAlchemy sessions."""
@@ -53,7 +65,6 @@ class DataManager:
             if hasattr(obj, key):
                 setattr(obj, key, value)
         session.commit()
-        session.refresh(obj)
         session.close()
         return obj
 
@@ -117,3 +128,54 @@ class DataManager:
         session.commit()
         session.close()
         return True
+
+    def add_sales_record(self, sales_record: 'SalesRecord') -> 'SalesRecord':
+        session = self.Session()
+        session.add(sales_record)
+        session.commit()
+        session.refresh(sales_record)
+        session.close()
+        return sales_record
+
+    def get_sales_records(self, filters: dict = None) -> list:
+        """Retrieve sales records matching optional filters."""
+        session = self.Session()
+        from models import SalesRecord
+        query = session.query(SalesRecord)
+        if filters:
+            start_date = filters.get('start_date')
+            end_date = filters.get('end_date')
+            customer_name = filters.get('customer_name')
+            product_name = filters.get('product_name')
+
+            if start_date:
+                query = query.filter(SalesRecord.sale_date >= start_date)
+            if end_date:
+                query = query.filter(SalesRecord.sale_date <= end_date)
+            if customer_name:
+                query = query.filter(SalesRecord.customer_name.like(f'%{customer_name}%'))
+            if product_name:
+                query = query.filter(SalesRecord.product_name.like(f'%{product_name}%'))
+
+        sales_records = query.order_by(SalesRecord.sale_date.desc()).all()
+        session.close()
+        return sales_records
+
+    def get_sales_record(self, record_id: int) -> Optional["SalesRecord"]:
+        """Retrieve a single sales record by ID."""
+        session = self.Session()
+        from models import SalesRecord
+        obj = session.get(SalesRecord, record_id)
+        session.close()
+        return obj
+
+    def update_sales_record(self, record_id: int, **kwargs) -> "SalesRecord":
+        session = self.Session()
+        from models import SalesRecord
+        obj = session.query(SalesRecord).get(record_id)
+        for key, value in kwargs.items():
+            if hasattr(obj, key):
+                setattr(obj, key, value)
+        session.commit()
+        session.close()
+        return obj

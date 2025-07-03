@@ -2,17 +2,18 @@ import sys, json
 from pathlib import Path
 from typing import Dict
 import shutil
-from PyQt5.QtCore import Qt, QSize
+from PyQt5.QtCore import Qt, QSize, QDate
 from PyQt5.QtGui import QPixmap, QIcon, QFont
 # from PyQt5.QtWidgets ... (unchanged)
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QListWidget, QListWidgetItem, QLabel, QPushButton,
-    QFileDialog, QLineEdit, QMessageBox, QDialog, QFormLayout, QSpinBox, QDoubleSpinBox, QTextEdit, QComboBox,
-    QTabWidget, QTableWidget, QTableWidgetItem, QAbstractItemView, QHeaderView, QCheckBox, QSizePolicy, QAbstractSpinBox
+    QFileDialog, QLineEdit, QMessageBox, QDialog, QSpinBox, QDoubleSpinBox, QTextEdit, QComboBox,
+    QTabWidget, QTableWidget, QTableWidgetItem, QAbstractItemView, QHeaderView, QCheckBox, QSizePolicy, QAbstractSpinBox,
+    QDateEdit, QGridLayout, QFormLayout, QGroupBox, QAbstractSpinBox, QWidget
 )
 # Additional imports for DetailDialog
-from models import Product
-from PyQt5.QtWidgets import QDialog, QFormLayout
+from models import Product, SalesRecord
+from PyQt5.QtWidgets import QDialog
 from config import app_base_dir, app_resource_path
 # ─── Paths ──────────────────────────────────────────────────────────
 PROJECT_ROOT = Path(app_base_dir())        # <project root> resolved by your helper
@@ -21,7 +22,14 @@ IMAGES_DIR.mkdir(exist_ok=True)            # create once if it doesn't exist
 
 def join2(a: str, b: str) -> str:
     a = a.strip(); b = b.strip()
-    return f"{a}/{b}" if a or b else ""
+    if a and b:
+        return f"{a}/{b}"
+    elif a:
+        return a
+    elif b:
+        return b
+    else:
+        return ""
 
 def split2(s: str) -> tuple[str, str]:
     if "/" in s:
@@ -32,10 +40,335 @@ def split2(s: str) -> tuple[str, str]:
 def _fmt_slash(val: str) -> str:
     return val.replace("/", "\n") if val else val
 
+from PyQt5.QtCore import QDate
+from PyQt5.QtWidgets import QDateEdit
+
+class SalesRecordDialog(QDialog):
+    def __init__(self, parent=None, sales_record=None, product=None):
+        super().__init__(parent)
+        self.setWindowTitle("판매 기록 수정" if sales_record else "판매 기록 등록")
+        self.setMinimumWidth(600)
+        # Removed setStyleSheet call as per instructions.
+        self.sales_record = sales_record
+        self.product = product
+        self._build_ui()
+        if sales_record:
+            self._populate_ui()
+        elif product:
+            self._populate_from_product()
+
+    def _build_ui(self):
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(10, 10, 10, 10)
+        main_layout.setSpacing(15)
+        from PyQt5.QtWidgets import QGroupBox
+
+        # 기/추 and 중/보 물림 inputs as split fields
+        self.basic_left = QLineEdit()
+        self.basic_left.setPlaceholderText("기본")
+        self.basic_left.setFrame(False)
+        self.basic_right = QLineEdit()
+        self.basic_right.setPlaceholderText("추가")
+        self.basic_right.setFrame(False)
+        basic_box = QHBoxLayout()
+        basic_box.addWidget(self.basic_left)
+        basic_box.addWidget(QLabel("/"))
+        basic_box.addWidget(self.basic_right)
+
+        self.bulim_left = QLineEdit()
+        self.bulim_left.setPlaceholderText("중앙")
+        self.bulim_left.setFrame(False)
+        self.bulim_right = QLineEdit()
+        self.bulim_right.setPlaceholderText("보조")
+        self.bulim_right.setFrame(False)
+        bulim_box = QHBoxLayout()
+        bulim_box.addWidget(self.bulim_left)
+        bulim_box.addWidget(QLabel("/"))
+        bulim_box.addWidget(self.bulim_right)
+
+        # Create all widgets
+        self.customer_name_edit = QLineEdit()
+        self.customer_name_edit.setFrame(False)
+        self.sale_type_cb = QComboBox()
+        self.sale_type_cb.addItems(["판매", "반품"])
+        self.return_reason_edit = QLineEdit()
+        self.return_reason_edit.setFrame(False)
+        self.product_spplier = QLineEdit()
+        self.product_spplier.setFrame(False)
+        self.product_name_edit = QLineEdit()
+        self.product_name_edit.setFrame(False)
+        self.karat_unit_cb = QComboBox()
+        self.karat_unit_cb.addItems(["14K", "18K", "24K"])
+        self.karat_g_edit = QLineEdit()
+        self.karat_g_edit.setFrame(False)
+        self.color_edit = QLineEdit()
+        self.color_edit.setFrame(False)
+        self.size_edit = QLineEdit()
+        self.size_edit.setFrame(False)
+        self.main_stone_type_edit = QLineEdit()
+        self.aux_stone_type_edit = QLineEdit()
+        self.notes_edit = QTextEdit()
+        self.sale_date_edit = QDateEdit(QDate.currentDate())
+        self.sale_date_edit.setCalendarPopup(True)
+
+        # Text inputs with unit labels (원 for prices, 개 for counts)
+        self.purchase_price_edit = QLineEdit()
+        self.purchase_price_edit.setFrame(False)
+        purchase_box = QHBoxLayout()
+        purchase_box.addWidget(self.purchase_price_edit)
+
+        self.sale_price_edit = QLineEdit()
+        self.sale_price_edit.setFrame(False)
+        sale_box = QHBoxLayout()
+        sale_box.addWidget(self.sale_price_edit)
+
+        self.final_price_edit = QLineEdit()
+        self.final_price_edit.setFrame(False)
+        final_box = QHBoxLayout()
+        final_box.addWidget(self.final_price_edit)
+
+        self.quantity_edit = QLineEdit()
+        self.quantity_edit.setFrame(False)
+        self.main_quantity_edit = QLineEdit()
+        self.main_quantity_edit.setFrame(False)
+        self.main_purchase_price_edit = QLineEdit()
+        self.main_purchase_price_edit.setFrame(False)
+        self.main_sale_price_edit = QLineEdit()
+        self.main_sale_price_edit.setFrame(False)
+        self.aux_quantity_edit = QLineEdit()
+        self.aux_quantity_edit.setFrame(False)
+        self.aux_purchase_price_edit = QLineEdit()
+        self.aux_purchase_price_edit.setFrame(False)
+        self.aux_sale_price_edit = QLineEdit()
+        self.aux_sale_price_edit.setFrame(False)
+
+
+        # Vertically center-align text in all line edits
+        for widget in [
+            self.basic_left, self.basic_right,
+            self.bulim_left, self.bulim_right,
+            self.customer_name_edit, self.return_reason_edit,
+            self.product_spplier, self.product_name_edit,
+            self.karat_g_edit, self.color_edit, self.size_edit,
+            self.purchase_price_edit, self.sale_price_edit, self.final_price_edit,
+            self.quantity_edit, self.main_quantity_edit,
+            self.main_purchase_price_edit, self.main_sale_price_edit,
+            self.aux_quantity_edit, self.aux_purchase_price_edit, self.aux_sale_price_edit
+        ]:
+            widget.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+
+        # Basic Info
+        basic_group = QGroupBox("기본 정보")
+        basic_form = QFormLayout()
+        basic_form.addRow("판매일:", self.sale_date_edit)
+        basic_form.addRow("고객명:", self.customer_name_edit)
+        basic_form.addRow("구분:", self.sale_type_cb)
+        basic_form.addRow("반품사유:", self.return_reason_edit)
+        form = basic_form
+        form.setContentsMargins(10, 10, 10, 10)
+        form.setHorizontalSpacing(15)
+        form.setVerticalSpacing(8)
+        form.setLabelAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        form.setFieldGrowthPolicy(QFormLayout.ExpandingFieldsGrow)
+        basic_group.setLayout(basic_form)
+
+        # Product Info
+        product_group = QGroupBox("상품 정보")
+        product_form = QFormLayout()
+        product_form.addRow("매입처:", self.product_spplier)
+        product_form.addRow("상품명:", self.product_name_edit)
+        form = product_form
+        form.setContentsMargins(10, 10, 10, 10)
+        form.setHorizontalSpacing(15)
+        form.setVerticalSpacing(8)
+        form.setLabelAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        form.setFieldGrowthPolicy(QFormLayout.ExpandingFieldsGrow)
+        product_group.setLayout(product_form)
+
+        # Price Info
+        price_group = QGroupBox("가격 정보")
+        price_form = QFormLayout()
+        price_form.addRow("매입시세:", purchase_box)
+        price_form.addRow("판매시세:", sale_box)
+        price_form.addRow("판매가:", final_box)
+        price_form.addRow("기/추:", basic_box)
+        price_form.addRow("중/보 물림:", bulim_box)
+        # Vertically center composite widgets in 가격 정보
+        price_form.setAlignment(purchase_box, Qt.AlignVCenter)
+        price_form.setAlignment(sale_box,     Qt.AlignVCenter)
+        price_form.setAlignment(final_box,    Qt.AlignVCenter)
+        price_form.setAlignment(basic_box,    Qt.AlignVCenter)
+        price_form.setAlignment(bulim_box,    Qt.AlignVCenter)
+        form = price_form
+        form.setContentsMargins(10, 10, 10, 10)
+        form.setHorizontalSpacing(15)
+        form.setVerticalSpacing(8)
+        form.setLabelAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        form.setFieldGrowthPolicy(QFormLayout.ExpandingFieldsGrow)
+        price_group.setLayout(price_form)
+
+        # Stone Info
+        stone_group = QGroupBox("석 정보")
+        stone_group.setMinimumWidth(300)
+        stone_form = QFormLayout()
+        stone_form.addRow("함량/단위:", self.karat_unit_cb)
+        stone_form.addRow("함량(g):", self.karat_g_edit)
+        stone_form.addRow("수량:", self.quantity_edit)
+        stone_form.addRow("색상:", self.color_edit)
+        stone_form.addRow("사이즈:", self.size_edit)
+        stone_form.addRow("메인석 종류:", self.main_stone_type_edit)
+        stone_form.addRow("메인석 수량:", self.main_quantity_edit)
+        stone_form.addRow("메인석 매입가:", self.main_purchase_price_edit)
+        stone_form.addRow("메인석 판매가:", self.main_sale_price_edit)
+        stone_form.addRow("보조석 종류:", self.aux_stone_type_edit)
+        stone_form.addRow("보조석 수량:", self.aux_quantity_edit)
+        stone_form.addRow("보조석 매입가:", self.aux_purchase_price_edit)
+        stone_form.addRow("보조석 판매가:", self.aux_sale_price_edit)
+        form = stone_form
+        form.setContentsMargins(10, 10, 10, 10)
+        form.setHorizontalSpacing(15)
+        form.setVerticalSpacing(8)
+        stone_group.setLayout(stone_form)
+
+        # Two-column layout: left holds basic, product, price; right holds stone
+        container = QHBoxLayout()
+        container.setContentsMargins(0, 0, 0, 0)
+        container.setSpacing(30)
+        left_vbox = QVBoxLayout()
+        left_vbox.addWidget(basic_group)
+        left_vbox.addWidget(product_group)
+        left_vbox.addWidget(price_group)
+        left_vbox.addStretch()
+        right_vbox = QVBoxLayout()
+        right_vbox.addWidget(stone_group)
+        right_vbox.addStretch()
+        # wider left column
+        container.addLayout(left_vbox, 2)
+        container.addLayout(right_vbox, 1)
+        main_layout.addLayout(container)
+
+        # Notes
+        notes_group = QGroupBox("비고")
+        notes_layout = QVBoxLayout()
+        notes_layout.addWidget(self.notes_edit)
+        notes_group.setLayout(notes_layout)
+        main_layout.addWidget(notes_group)
+
+        # Buttons
+        btn_layout = QHBoxLayout()
+        btn_layout.addStretch()
+        save_btn = QPushButton("저장")
+        cancel_btn = QPushButton("취소")
+        save_btn.clicked.connect(self.accept)
+        cancel_btn.clicked.connect(self.reject)
+        btn_layout.addWidget(save_btn)
+        btn_layout.addWidget(cancel_btn)
+        main_layout.addLayout(btn_layout)
+
+        # Auto-fill from product
+        if self.product:
+            self._populate_from_product()
+
+    def _populate_ui(self):
+        record = self.sales_record
+        self.customer_name_edit.setText(record.customer_name)
+        self.sale_type_cb.setCurrentText(record.sale_type)
+        self.return_reason_edit.setText(record.return_reason)
+        # Populate QLineEdit fields instead of spinboxes for prices and quantities
+        self.purchase_price_edit.setText(str(record.purchase_market_price))
+        self.sale_price_edit.setText(str(record.sale_market_price))
+        self.final_price_edit.setText(str(record.final_sale_price))
+        self.product_spplier.setText(record.product_spplier)
+        self.product_name_edit.setText(record.product_name)
+        self.karat_unit_cb.setCurrentText(record.karat_unit)
+        self.karat_g_edit.setText(record.karat_g)
+        self.quantity_edit.setText(str(record.quantity))
+        self.color_edit.setText(record.color)
+        self.size_edit.setText(record.size)
+        self.main_stone_type_edit.setText(record.main_stone_type)
+        self.main_quantity_edit.setText(str(record.main_stone_quantity))
+        self.main_purchase_price_edit.setText(str(record.main_stone_purchase_price))
+        self.main_sale_price_edit.setText(str(record.main_stone_sale_price))
+        self.aux_stone_type_edit.setText(record.aux_stone_type)
+        self.aux_quantity_edit.setText(str(record.aux_stone_quantity))
+        self.aux_purchase_price_edit.setText(str(record.aux_stone_purchase_price))
+        self.aux_sale_price_edit.setText(str(record.aux_stone_sale_price))
+        self.notes_edit.setPlainText(record.notes)
+        self.sale_date_edit.setDate(QDate(record.sale_date))
+        # populate split fields
+        left, right = split2(record.basic_extra)
+        self.basic_left.setText(left)
+        self.basic_right.setText(right)
+        left, right = split2(record.mid_back_bulim)
+        self.bulim_left.setText(left)
+        self.bulim_right.setText(right)
+
+    def _populate_from_product(self):
+        product = self.product
+        self.product_spplier.setText(product.supplier_name)
+        self.product_name_edit.setText(product.name)
+        left, right = split2(product.basic_extra)
+        self.basic_left.setText(left)
+        self.basic_right.setText(right)
+        left, right = split2(product.mid_back_bulim)
+        self.bulim_left.setText(left)
+        self.bulim_right.setText(right)
+
+    def get_sales_record_data(self):
+        if self.exec_() != QDialog.Accepted:
+            return None
+
+        from models import SalesRecord
+        # Validate numeric inputs
+        try:
+            purchase = int(self.purchase_price_edit.text().replace(',', '').strip() or 0)
+            sale = int(self.sale_price_edit.text().replace(',', '').strip() or 0)
+            final = int(self.final_price_edit.text().replace(',', '').strip() or 0)
+            qty = int(self.quantity_edit.text().replace(',', '').strip() or 0)
+            main_qty = int(self.main_quantity_edit.text().replace(',', '').strip() or 0)
+            main_pp = int(self.main_purchase_price_edit.text().replace(',', '').strip() or 0)
+            main_sp = int(self.main_sale_price_edit.text().replace(',', '').strip() or 0)
+            aux_qty = int(self.aux_quantity_edit.text().replace(',', '').strip() or 0)
+            aux_pp = int(self.aux_purchase_price_edit.text().replace(',', '').strip() or 0)
+            aux_sp = int(self.aux_sale_price_edit.text().replace(',', '').strip() or 0)
+        except ValueError:
+            QMessageBox.warning(self, "오류", "숫자 입력이 잘못되었습니다. 모든 숫자 필드를 확인해주세요.")
+            return None
+
+        return SalesRecord(
+            id=self.sales_record.id if self.sales_record else None,
+            customer_name=self.customer_name_edit.text().strip(),
+            sale_type=self.sale_type_cb.currentText(),
+            return_reason=self.return_reason_edit.text().strip(),
+            purchase_market_price=purchase,
+            sale_market_price=sale,
+            final_sale_price=final,
+            product_spplier=self.product_spplier.text().strip(),
+            product_name=self.product_name_edit.text().strip(),
+            karat_unit=self.karat_unit_cb.currentText(),
+            karat_g=self.karat_g_edit.text().strip(),
+            quantity=qty,
+            color=self.color_edit.text().strip(),
+            size=self.size_edit.text().strip(),
+            main_stone_type=self.main_stone_type_edit.text().strip(),
+            main_stone_quantity=main_qty,
+            main_stone_purchase_price=main_pp,
+            main_stone_sale_price=main_sp,
+            aux_stone_type=self.aux_stone_type_edit.text().strip(),
+            aux_stone_quantity=aux_qty,
+            aux_stone_purchase_price=aux_pp,
+            aux_stone_sale_price=aux_sp,
+            basic_extra=join2(self.basic_left.text(), self.basic_right.text()),
+            mid_back_bulim=join2(self.bulim_left.text(), self.bulim_right.text()),
+            notes=self.notes_edit.toPlainText().strip(),
+            sale_date=self.sale_date_edit.date().toPyDate()
+        )
+
 class DetailDialog(QDialog):
     """Custom dialog for clearer, more readable product details."""
     def __init__(self, parent, product: Product):
         super().__init__(parent)
+        self.product = product
         from PyQt5.QtGui import QFont
         self.setWindowTitle(product.name)
         self.setStyleSheet("QDialog {background: white;} QLabel {font-size:14px;}")
@@ -91,12 +424,116 @@ class DetailDialog(QDialog):
         main_layout.addLayout(form)
 
         # ─── Button goes inside the *left* (image) column ─────────
+        btn_layout = QHBoxLayout()
+        btn_sell = QPushButton("판매")
+        btn_sell.clicked.connect(self._sell_product)
         btn_ok = QPushButton("닫기")
         btn_ok.clicked.connect(self.accept)
+        btn_layout.addWidget(btn_sell)
+        btn_layout.addWidget(btn_ok)
+        
         img_layout.addStretch()                   # push button to bottom if images are short
-        img_layout.addWidget(btn_ok, alignment=Qt.AlignHCenter)
+        img_layout.addLayout(btn_layout)
+
+    def _sell_product(self):
+        # Open sales record dialog prefilled with this product
+        dlg = SalesRecordDialog(self, None, self.product)
+        sales_record_data = dlg.get_sales_record_data()
+        if sales_record_data:
+            # Add and refresh
+            self.parent().data.add_sales_record(sales_record_data)
+            QMessageBox.information(self, "성공", "판매 기록이 추가되었습니다.")
+            self.parent().load_sales()
+            self.accept()
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# SalesRecordDetailDialog: 판매 기록 상세 보기 다이얼로그 (Section Grouped)
+class SalesRecordDetailDialog(QDialog):
+    """Dialog to view sales record details with clear section grouping."""
+    def __init__(self, parent=None, record: SalesRecord=None):
+        super().__init__(parent)
+        self.record = record
+        self.setWindowTitle("판매 기록 상세")
+        self.setMinimumWidth(800)
+        main_layout = QVBoxLayout(self)
+
+        from PyQt5.QtWidgets import QGroupBox
+
+        # 기본 정보
+        basic_group = QGroupBox("기본 정보")
+        basic_layout = QFormLayout()
+        basic_layout.addRow("판매일:", QLabel(str(record.sale_date)))
+        basic_layout.addRow("고객명:", QLabel(record.customer_name))
+        basic_layout.addRow("구분:", QLabel(record.sale_type))
+        basic_layout.addRow("반품사유:", QLabel(record.return_reason or "-"))
+        basic_group.setLayout(basic_layout)
+
+        # 상품 정보
+        product_group = QGroupBox("상품 정보")
+        product_layout = QFormLayout()
+        product_layout.addRow("매입처:", QLabel(record.product_spplier))
+        product_layout.addRow("상품명:", QLabel(record.product_name))
+        product_group.setLayout(product_layout)
+
+        # 가격 정보
+        price_group = QGroupBox("가격 정보")
+        price_layout = QFormLayout()
+        price_layout.addRow("매입시세:", QLabel(f"{record.purchase_market_price:,} 원"))
+        price_layout.addRow("판매시세:", QLabel(f"{record.sale_market_price:,} 원"))
+        price_layout.addRow("판매가:", QLabel(f"{record.final_sale_price:,} 원"))
+        price_layout.addRow("기/추:", QLabel(record.basic_extra.replace('/', ' / ')))
+        price_layout.addRow("중/보 물림:", QLabel(record.mid_back_bulim.replace('/', ' / ')))
+        price_group.setLayout(price_layout)
+
+        # 석 정보
+        stone_group = QGroupBox("석 정보")
+        stone_layout = QFormLayout()
+        stone_layout.addRow("수량:", QLabel(str(record.quantity)))
+        stone_layout.addRow("색상:", QLabel(record.color))
+        stone_layout.addRow("사이즈:", QLabel(record.size))
+        stone_layout.addRow("메인석 종류:", QLabel(record.main_stone_type))
+        stone_layout.addRow("메인석 수량:", QLabel(str(record.main_stone_quantity)))
+        stone_layout.addRow("메인석 매입가:", QLabel(f"{record.main_stone_purchase_price:,} 원"))
+        stone_layout.addRow("메인석 판매가:", QLabel(f"{record.main_stone_sale_price:,} 원"))
+        stone_layout.addRow("보조석 종류:", QLabel(record.aux_stone_type))
+        stone_layout.addRow("보조석 수량:", QLabel(str(record.aux_stone_quantity)))
+        stone_layout.addRow("보조석 매입가:", QLabel(f"{record.aux_stone_purchase_price:,} 원"))
+        stone_layout.addRow("보조석 판매가:", QLabel(f"{record.aux_stone_sale_price:,} 원"))
+        stone_group.setLayout(stone_layout)
+
+        # 비고
+        notes_group = QGroupBox("비고")
+        notes_layout = QVBoxLayout()
+        notes_layout.addWidget(QLabel(record.notes or "-"))
+        notes_group.setLayout(notes_layout)
+
+        # two-column container
+        container = QHBoxLayout()
+        left_vbox = QVBoxLayout()
+        left_vbox.addWidget(basic_group)
+        left_vbox.addWidget(product_group)
+        right_vbox = QVBoxLayout()
+        right_vbox.addWidget(price_group)
+        right_vbox.addWidget(stone_group)
+        # Notes group should NOT be inside right_vbox
+        container.addLayout(left_vbox)
+        container.addLayout(right_vbox)
+        main_layout.addLayout(container)
+
+        # Notes group spans full width below both columns
+        main_layout.addWidget(notes_group)
+
+        # 닫기 버튼
+        btn_layout = QHBoxLayout()
+        btn_layout.addStretch()
+        close_btn = QPushButton("닫기")
+        close_btn.clicked.connect(self.accept)
+        close_btn.setDefault(True)
+        btn_layout.addWidget(close_btn)
+        main_layout.addLayout(btn_layout)
 # Ensure QApplication is imported for combo box style setting
-from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QApplication, QMessageBox
 from db import DataManager
 from models import Product
 from functools import partial 
@@ -290,6 +727,7 @@ class MainWindow(QMainWindow):
         self.data = DataManager()
         self._build_ui()
         self.load_products()
+        self.load_sales()
 
     def _init_icons(self):
         from PyQt5.QtCore import Qt
@@ -332,36 +770,65 @@ class MainWindow(QMainWindow):
     def _build_ui(self):
         central = QWidget(); vbox = QVBoxLayout(central)
 
-        # search bar
-        search_h = QHBoxLayout()
-        self.f_widgets: Dict[str, QLineEdit|QComboBox] = {}
-        cat_cb = QComboBox(); cat_cb.addItems(["","E","R","N","B","O"])
-        cat_cb.setEditable(True)
-        cat_cb.lineEdit().setReadOnly(True)
-        cat_cb.lineEdit().setPlaceholderText("품목")
-        cat_cb.setFixedWidth(80)
-        cat_cb.setToolTip("품목 필터")
-        # Removed setStyle(QApplication.style()) to allow stylesheet to apply
-        self.f_widgets["category"]=cat_cb; search_h.addWidget(cat_cb)
+        # --- 이미지 탭 search bar ---
+        search_h_img = QHBoxLayout()
+        self.f_widgets_img: Dict[str, QLineEdit|QComboBox] = {}
+        cat_cb_img = QComboBox(); cat_cb_img.addItems(["","E","R","N","B","O"])
+        cat_cb_img.setEditable(True)
+        cat_cb_img.lineEdit().setReadOnly(True)
+        cat_cb_img.lineEdit().setPlaceholderText("품목")
+        cat_cb_img.setFixedWidth(80)
+        cat_cb_img.setToolTip("품목 필터")
+        self.f_widgets_img["category"]=cat_cb_img; search_h_img.addWidget(cat_cb_img)
 
-        sup_edit = QLineEdit(); sup_edit.setPlaceholderText("매입처명"); self.f_widgets["supplier_name"]=sup_edit; search_h.addWidget(sup_edit)
-        sup_no = QLineEdit(); sup_no.setPlaceholderText("매입처상품번호"); self.f_widgets["supplier_item_no"]=sup_no; search_h.addWidget(sup_no)
-        name_edit = QLineEdit(); name_edit.setPlaceholderText("상품명"); self.f_widgets["name"]=name_edit; search_h.addWidget(name_edit)
-        code_edit = QLineEdit(); code_edit.setPlaceholderText("상품번호"); self.f_widgets["product_code"]=code_edit; search_h.addWidget(code_edit)
-        
-        disc_cb = QComboBox(); disc_cb.addItems(["","Y","N"])
-        disc_cb.setEditable(True)
-        disc_cb.lineEdit().setReadOnly(True)
-        disc_cb.lineEdit().setPlaceholderText("단종")
-        disc_cb.setFixedWidth(80)
-        disc_cb.setToolTip("단종")
-        # Removed setStyle(QApplication.style()) to allow stylesheet to apply
-        self.f_widgets["discontinued"]=disc_cb; search_h.addWidget(disc_cb)
+        sup_edit_img = QLineEdit(); sup_edit_img.setPlaceholderText("매입처명"); self.f_widgets_img["supplier_name"]=sup_edit_img; search_h_img.addWidget(sup_edit_img)
+        sup_no_img = QLineEdit(); sup_no_img.setPlaceholderText("매입처상품번호"); self.f_widgets_img["supplier_item_no"]=sup_no_img; search_h_img.addWidget(sup_no_img)
+        name_edit_img = QLineEdit(); name_edit_img.setPlaceholderText("상품명"); self.f_widgets_img["name"]=name_edit_img; search_h_img.addWidget(name_edit_img)
+        code_edit_img = QLineEdit(); code_edit_img.setPlaceholderText("상품번호"); self.f_widgets_img["product_code"]=code_edit_img; search_h_img.addWidget(code_edit_img)
 
-        search_btn = QPushButton("검색"); search_btn.clicked.connect(lambda: self.load_products(self._filters())); search_h.addWidget(search_btn)
-        reset_btn = QPushButton("메인으로"); reset_btn.clicked.connect(self._show_all); search_h.addWidget(reset_btn) 
-        
-        vbox.addLayout(search_h)
+        disc_cb_img = QComboBox(); disc_cb_img.addItems(["","Y","N"])
+        disc_cb_img.setEditable(True)
+        disc_cb_img.lineEdit().setReadOnly(True)
+        disc_cb_img.lineEdit().setPlaceholderText("단종")
+        disc_cb_img.setFixedWidth(80)
+        disc_cb_img.setToolTip("단종")
+        self.f_widgets_img["discontinued"]=disc_cb_img; search_h_img.addWidget(disc_cb_img)
+
+        search_btn_img = QPushButton("검색"); search_btn_img.clicked.connect(lambda: self.load_products(self._filters())); search_h_img.addWidget(search_btn_img)
+        reset_btn_img = QPushButton("메인으로"); reset_btn_img.clicked.connect(self._show_all); search_h_img.addWidget(reset_btn_img)
+
+        product_search_widget_img = QWidget()
+        product_search_widget_img.setLayout(search_h_img)
+
+        # --- 목록 탭 search bar ---
+        search_h_list = QHBoxLayout()
+        self.f_widgets_list: Dict[str, QLineEdit|QComboBox] = {}
+        cat_cb_list = QComboBox(); cat_cb_list.addItems(["","E","R","N","B","O"])
+        cat_cb_list.setEditable(True)
+        cat_cb_list.lineEdit().setReadOnly(True)
+        cat_cb_list.lineEdit().setPlaceholderText("품목")
+        cat_cb_list.setFixedWidth(80)
+        cat_cb_list.setToolTip("품목 필터")
+        self.f_widgets_list["category"]=cat_cb_list; search_h_list.addWidget(cat_cb_list)
+
+        sup_edit_list = QLineEdit(); sup_edit_list.setPlaceholderText("매입처명"); self.f_widgets_list["supplier_name"]=sup_edit_list; search_h_list.addWidget(sup_edit_list)
+        sup_no_list = QLineEdit(); sup_no_list.setPlaceholderText("매입처상품번호"); self.f_widgets_list["supplier_item_no"]=sup_no_list; search_h_list.addWidget(sup_no_list)
+        name_edit_list = QLineEdit(); name_edit_list.setPlaceholderText("상품명"); self.f_widgets_list["name"]=name_edit_list; search_h_list.addWidget(name_edit_list)
+        code_edit_list = QLineEdit(); code_edit_list.setPlaceholderText("상품번호"); self.f_widgets_list["product_code"]=code_edit_list; search_h_list.addWidget(code_edit_list)
+
+        disc_cb_list = QComboBox(); disc_cb_list.addItems(["","Y","N"])
+        disc_cb_list.setEditable(True)
+        disc_cb_list.lineEdit().setReadOnly(True)
+        disc_cb_list.lineEdit().setPlaceholderText("단종")
+        disc_cb_list.setFixedWidth(80)
+        disc_cb_list.setToolTip("단종")
+        self.f_widgets_list["discontinued"]=disc_cb_list; search_h_list.addWidget(disc_cb_list)
+
+        search_btn_list = QPushButton("검색"); search_btn_list.clicked.connect(lambda: self.load_products(self._filters())); search_h_list.addWidget(search_btn_list)
+        reset_btn_list = QPushButton("메인으로"); reset_btn_list.clicked.connect(self._show_all); search_h_list.addWidget(reset_btn_list)
+
+        product_search_widget_list = QWidget()
+        product_search_widget_list.setLayout(search_h_list)
 
         # --- Global (buttons / tabs / combobox) -------------------------------
         GLOBAL_CSS = """
@@ -490,23 +957,32 @@ class MainWindow(QMainWindow):
 
         # tabs
         self.tabs = QTabWidget()
+
+        # --- 이미지 탭: wrap image list in a tab, insert search widget at top
+        image_tab = QWidget()
+        image_layout = QVBoxLayout(image_tab)
+        # Insert search widget at the top
+        image_layout.insertWidget(0, product_search_widget_img)
         self.image_list = QListWidget()
         self.image_list.setFlow(QListWidget.LeftToRight)
         self.image_list.setResizeMode(QListWidget.Adjust)   # ← ★ 중요: 크기 변경 시 재배치
         self.image_list.setWrapping(True)                   # ← 행이 가득 차면 자동 줄바꿈
-        # 이미지 리스트
-
         self.image_list.setViewMode(QListWidget.IconMode)
         self.image_list.setIconSize(QSize(self.IMAGE_SIZE,self.IMAGE_SIZE))
         self.image_list.setSpacing(15)
         self.image_list.itemDoubleClicked.connect(self._show_popup)
-        self.tabs.addTab(self.image_list, "이미지")
+        image_layout.addWidget(self.image_list)
+        self.tabs.addTab(image_tab, "이미지")
 
+        # --- 목록 탭: wrap table in a tab, insert search widget at top
+        list_tab = QWidget()
+        list_layout = QVBoxLayout(list_tab)
+        # Insert search widget at the top
+        list_layout.insertWidget(0, product_search_widget_list)
         self.table = QTableWidget()
         self.table.setWordWrap(True)
         self.table.setTextElideMode(Qt.ElideNone)
         self.table.verticalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
-
         # Dynamically set column count and headers
         headers = [
             "ID","이미지","품목","매입처","매입처상품번호","상품명","상품번호","함량","중량(g)","사이즈",
@@ -540,7 +1016,43 @@ class MainWindow(QMainWindow):
         self.table.cellClicked.connect(self._table_click)
         self.table.itemDoubleClicked.connect(self._row_dbl_clicked)
         self._apply_column_widths()
-        self.tabs.addTab(self.table, "목록")
+        list_layout.addWidget(self.table)
+        self.tabs.addTab(list_tab, "목록")
+
+        # Sales Tab
+        sales_widget = QWidget()
+        sales_layout = QVBoxLayout(sales_widget)
+        
+        sales_search_layout = QHBoxLayout()
+        self.sales_start_date = QDateEdit(QDate.currentDate().addMonths(-1))
+        self.sales_start_date.setCalendarPopup(True)
+        self.sales_end_date = QDateEdit(QDate.currentDate())
+        self.sales_end_date.setCalendarPopup(True)
+        self.sales_customer_name = QLineEdit()
+        self.sales_customer_name.setPlaceholderText("고객명")
+        self.sales_product_name = QLineEdit()
+        self.sales_product_name.setPlaceholderText("제품명")
+        sales_search_btn = QPushButton("검색")
+        sales_search_btn.clicked.connect(self.load_sales)
+        sales_reset_btn = QPushButton("메인으로")
+        sales_reset_btn.clicked.connect(self._show_all_sales)
+
+        sales_search_layout.addWidget(QLabel("판매일자:"))
+        sales_search_layout.addWidget(self.sales_start_date)
+        sales_search_layout.addWidget(QLabel("~"))
+        sales_search_layout.addWidget(self.sales_end_date)
+        sales_search_layout.addWidget(self.sales_customer_name)
+        sales_search_layout.addWidget(self.sales_product_name)
+        sales_search_layout.addWidget(sales_search_btn)
+        sales_search_layout.addWidget(sales_reset_btn)
+        sales_layout.addLayout(sales_search_layout)
+
+        self.sales_table = QTableWidget()
+        self.sales_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.sales_table.setSelectionBehavior(QAbstractItemView.SelectRows)
+        sales_layout.addWidget(self.sales_table)
+        self.sales_table.itemDoubleClicked.connect(self._row_dbl_clicked_sales)
+        self.tabs.addTab(sales_widget, "판매관리")
 
         vbox.addWidget(self.tabs)
 
@@ -559,8 +1071,16 @@ class MainWindow(QMainWindow):
         self.setStyleSheet(GLOBAL_CSS + COMMON_CSS)
 
     def _filters(self):
+        # Use correct filter widgets dict depending on current tab
+        tab = self.tabs.currentIndex()
+        if tab == 0:
+            widgets = self.f_widgets_img
+        elif tab == 1:
+            widgets = self.f_widgets_list
+        else:
+            widgets = {}
         d = {}
-        for k, w in self.f_widgets.items():
+        for k, w in widgets.items():
             val = w.currentText() if isinstance(w, QComboBox) else w.text()
             val = val.strip()
             if val:                       # 빈 값 제거
@@ -692,18 +1212,84 @@ class MainWindow(QMainWindow):
 
         self.table.setColumnHidden(0, True)
 
+    def load_sales(self):
+        filters = {
+            'start_date': self.sales_start_date.date().toPyDate(),
+            'end_date': self.sales_end_date.date().toPyDate(),
+            'customer_name': self.sales_customer_name.text().strip(),
+            'product_name': self.sales_product_name.text().strip(),
+        }
+        sales_records = self.data.get_sales_records(filters)
+        self.sales_table.setRowCount(len(sales_records))
+        self.sales_table.setColumnCount(5)
+        self.sales_table.setHorizontalHeaderLabels(["날짜", "고객명", "상품명", "판매가", "수정"])
+
+        BTN_CSS = """
+        QPushButton { border:none; background:transparent; }
+        QPushButton:hover { background:#1890ff11; border-radius:4px; }
+        """
+
+        for row, record in enumerate(sales_records):
+            # Store the record ID in the UserRole of the date cell
+            item_date = QTableWidgetItem(str(record.sale_date))
+            item_date.setData(Qt.UserRole, record.id)
+            self.sales_table.setItem(row, 0, item_date)
+            self.sales_table.setItem(row, 1, QTableWidgetItem(record.customer_name))
+            self.sales_table.setItem(row, 2, QTableWidgetItem(record.product_name))
+            self.sales_table.setItem(row, 3, QTableWidgetItem(f"{record.final_sale_price:,} 원"))
+
+            edit_btn = QPushButton()
+            edit_btn.setProperty("cellBtn", True)
+            edit_btn.setStyleSheet(BTN_CSS)
+            edit_btn.setIcon(self.EDIT_IC)
+            edit_btn.setIconSize(QSize(24, 24))
+            edit_btn.setFixedSize(32, 32)
+            edit_btn.setFlat(True)
+            edit_btn.clicked.connect(partial(self._edit_sales_record, record.id))
+            self.sales_table.setCellWidget(row, 4, self._make_centered_widget(edit_btn))
+
+        # Set column resize modes as specified
+        header = self.sales_table.horizontalHeader()
+        # "수정" column (index 4): Fixed width
+        header.setSectionResizeMode(4, QHeaderView.Fixed)
+        self.sales_table.setColumnWidth(4, 50)
+        # "상품명" (index 2) and "판매가" (index 3): Stretch
+        header.setSectionResizeMode(2, QHeaderView.Stretch)
+        header.setSectionResizeMode(3, QHeaderView.Stretch)
+        # Remaining columns: ResizeToContents
+        for idx in range(self.sales_table.columnCount()):
+            if idx not in (2, 3, 4):
+                header.setSectionResizeMode(idx, QHeaderView.ResizeToContents)
+        # Prevent last section from stretching
+        header.setStretchLastSection(False)
+
 
     def _show_popup(self,item):
         pid=item.data(Qt.UserRole); self._popup(pid)
 
     def _show_all(self):
-        # 필터 UI 비우기
-        for w in self.f_widgets.values():
+        # 필터 UI 비우기 - use correct widgets dict for tab
+        tab = self.tabs.currentIndex()
+        if tab == 0:
+            widgets = self.f_widgets_img
+        elif tab == 1:
+            widgets = self.f_widgets_list
+        else:
+            widgets = {}
+        for w in widgets.values():
             if isinstance(w, QComboBox):
                 w.setCurrentIndex(0)
             else:
                 w.clear()
         self.load_products({})   # 전체 조회
+
+    def _show_all_sales(self):
+        """판매관리(판매기록) 검색바의 필터를 초기화하고 전체 판매기록을 다시 로드합니다."""
+        self.sales_start_date.setDate(QDate.currentDate().addMonths(-1))
+        self.sales_end_date.setDate(QDate.currentDate())
+        self.sales_customer_name.clear()
+        self.sales_product_name.clear()
+        self.load_sales()
 
     def _show_favs(self):
         self.load_products({"is_favorite": "1"})
@@ -727,6 +1313,29 @@ class MainWindow(QMainWindow):
             pid = int(pid_item.data(Qt.UserRole))
             self._popup(pid)
 
+
+    def _row_dbl_clicked_sales(self, item: QTableWidgetItem):
+        """판매 기록 행 더블‑클릭 → 상세 팝업"""
+        row = item.row()
+        record_id = self.sales_table.item(row, 0).data(Qt.UserRole)
+        record = self.data.get_sales_record(record_id)
+        if record:
+            dlg = SalesRecordDetailDialog(self, record)
+            dlg.exec_()
+
+    def _edit_sales_record(self, record_id: int):
+        record = self.data.get_sales_record(record_id)
+        if not record:
+            QMessageBox.warning(self, "오류", "판매 기록을 찾을 수 없습니다.")
+            return
+        
+        dlg = SalesRecordDialog(self, record)
+        updated_record = dlg.get_sales_record_data()
+        if updated_record:
+            data = {k: v for k, v in updated_record.__dict__.items() if k != "id" and not k.startswith('_sa_')}
+            self.data.update_sales_record(record_id, **data)
+            QMessageBox.information(self, "성공", "판매 기록이 업데이트되었습니다.")
+            self.load_sales()
 
     def _popup(self, pid: int):
         p = self.data.get_product(pid)
@@ -772,7 +1381,6 @@ class MainWindow(QMainWindow):
         if pid is None:
             QMessageBox.information(self, "알림", "상품을 선택하세요.")
             return
-    
         self.data.toggle_favorite(pid)
         self.load_products()
 
@@ -804,7 +1412,8 @@ def launch_app():
     app.setStyle("fusion")          # 기본 Fusion 라이트
     _set_light_palette(app)         # 라이트 팔레트 설정
 
-    app.setFont(QFont("맑은 고딕", 12))
+    app.setFont(QFont("Arial", 12))
     w = MainWindow()
     w.showMaximized()
     sys.exit(app.exec_())
+    
