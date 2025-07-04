@@ -2,11 +2,15 @@
 
 // Utility Functions
 function showDialog(dialogId) {
-    document.getElementById(dialogId).style.display = 'flex';
+    const dialog = document.getElementById(dialogId);
+    dialog.style.display = 'flex';
+    dialog.classList.add('active');
 }
 
 function hideDialog(dialogId) {
-    document.getElementById(dialogId).style.display = 'none';
+    const dialog = document.getElementById(dialogId);
+    dialog.style.display = 'none';
+    dialog.classList.remove('active');
 }
 
 function split2(s) {
@@ -160,13 +164,33 @@ function displayProducts(products) {
             <td><button class="edit-btn" data-id="${p.id}">✎</button></td>
         `;
 
-        row.querySelector('.fav-btn').addEventListener('click', (e) => {
-            e.stopPropagation();
-            toggleFavorite(p.id);
-        });
-        row.querySelector('.edit-btn').addEventListener('click', (e) => {
-            e.stopPropagation();
-            showProductForm(p.id);
+        // "수정" 버튼이 항상 폼을 열게 함, robust event binding
+        const editBtn = row.querySelector('.edit-btn');
+        if (editBtn) {
+            editBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                showProductForm(p.id);
+            });
+        }
+
+        // "즐겨찾기" 버튼 이벤트
+        const favBtn = row.querySelector('.fav-btn');
+        if (favBtn) {
+            favBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                toggleFavorite(p.id);
+            });
+        }
+
+        // Row selection (excluding button clicks)
+        row.addEventListener('click', (e) => {
+            // 버튼을 클릭했을 때는 row 선택 동작 무시
+            if (
+                e.target.classList.contains('edit-btn') ||
+                e.target.classList.contains('fav-btn')
+            ) return;
+            document.querySelectorAll('#product-table tbody tr').forEach(r => r.classList.remove('selected'));
+            row.classList.add('selected');
         });
     });
 }
@@ -187,9 +211,18 @@ function displaySalesRecords(salesRecords) {
             <td>${formatCurrency(record.final_sale_price)}</td>
             <td><button class="edit-btn" data-id="${record.id}">✎</button></td>
         `;
-        row.querySelector('.edit-btn').addEventListener('click', (e) => {
-            e.stopPropagation();
-            showSalesRecordForm(record.id);
+        // "수정" 버튼이 폼을 열게 함
+        const editBtn = row.querySelector('.edit-btn');
+        if (editBtn) {
+            editBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                showSalesRecordForm(record.id);
+            });
+        }
+        // 클릭 시 선택 표시를 주어 삭제 대상을 지정할 수 있게 함
+        row.addEventListener('click', () => {
+            document.querySelectorAll('#sales-table tbody tr').forEach(r => r.classList.remove('selected'));
+            row.classList.add('selected');
         });
     });
 }
@@ -212,8 +245,6 @@ async function showProductDetail(productId) {
     document.getElementById('detail-mid-back-labor').textContent = product.mid_back_labor.replace('/', ' / ');
     document.getElementById('detail-cubic-labor').textContent = product.cubic_labor;
     document.getElementById('detail-total-labor').textContent = product.total_labor;
-    document.getElementById('detail-discontinued').textContent = product.discontinued ? 'Y' : 'N';
-    document.getElementById('detail-stock-qty').textContent = product.stock_qty;
     document.getElementById('detail-notes').textContent = product.notes || '-';
 
     // Handle extra images (if any)
@@ -245,6 +276,9 @@ async function showProductForm(productId = null) {
 
     // Clear image input value
     document.getElementById('image-upload-input').value = '';
+
+    // Show dialog immediately
+    showDialog('product-form-dialog');
 
     if (productId) {
         formTitle.textContent = '상품 정보 수정';
@@ -282,7 +316,6 @@ async function showProductForm(productId = null) {
     } else {
         formTitle.textContent = '새 상품 등록';
     }
-    showDialog('product-form-dialog');
 }
 
 async function showSalesRecordForm(salesId = null, product = null) {
@@ -458,9 +491,48 @@ document.addEventListener('DOMContentLoaded', () => {
         loadSales();
     });
 
-    // Action Buttons
-    document.getElementById('add-btn').addEventListener('click', () => showProductForm());
-    document.getElementById('delete-btn').addEventListener('click', deleteProduct);
+    // Action Buttons (contextual for Product vs Sales)
+    document.getElementById('add-btn').addEventListener('click', () => {
+        const currentTab = document.querySelector('.tab-button.active').dataset.tab;
+        if (currentTab === 'sales') {
+            showSalesRecordForm();
+        } else {
+            showProductForm();
+        }
+    });
+    document.getElementById('delete-btn').addEventListener('click', async () => {
+        const currentTab = document.querySelector('.tab-button.active').dataset.tab;
+        if (currentTab === 'sales') {
+            const selected = document.querySelector('#sales-table tbody tr.selected');
+            if (!selected) {
+                alert('삭제할 판매 기록을 선택하세요.');
+                return;
+            }
+            const salesId = selected.dataset.salesId;
+            if (confirm('선택한 판매 기록을 삭제하시겠습니까?')) {
+                await fetchData(`/api/sales/${salesId}`, 'DELETE');
+                loadSales();
+            }
+        } else {
+            deleteProduct();
+        }
+    });
+    // Product table edit button delegation
+    const productTable = document.getElementById('product-table');
+    productTable.addEventListener('click', (e) => {
+        if (e.target.classList.contains('edit-btn')) {
+            e.stopPropagation();
+            const productId = e.target.dataset.id;
+            showProductForm(productId);
+        }
+    });
+    // Delegate double-click on product rows to show detail dialog
+    productTable.addEventListener('dblclick', (e) => {
+        const tr = e.target.closest('tr');
+        if (tr && tr.dataset.productId) {
+            showProductDetail(tr.dataset.productId);
+        }
+    });
     document.getElementById('fav-only-btn').addEventListener('click', () => loadProducts({ is_favorite: true }));
 
     // Dialog Close Buttons
@@ -610,34 +682,51 @@ async function loadSales(filters = {}) {
 
 async function deleteProduct() {
     const currentTab = document.querySelector('.tab-button.active').dataset.tab;
-    let productId = null;
-
-    if (currentTab === 'image') {
-        const selectedItem = document.querySelector('.image-item.selected');
-        if (selectedItem) {
-            productId = selectedItem.dataset.productId;
-        } else {
-            alert('삭제할 상품을 선택하세요.');
+    if (currentTab === 'sales') {
+        // 삭제할 판매 기록을 선택했는지 확인
+        const selected = document.querySelector('#sales-table tbody tr.selected');
+        if (!selected) {
+            alert('삭제할 판매 기록을 선택하세요.');
             return;
         }
-    } else if (currentTab === 'list') {
-        const selectedRow = document.querySelector('#product-table tbody tr.selected');
-        if (selectedRow) {
-            productId = selectedRow.dataset.productId;
-        } else {
-            alert('삭제할 상품을 선택하세요.');
-            return;
+        const salesId = selected.dataset.salesId;
+        if (confirm('선택한 판매 기록을 삭제하시겠습니까?')) {
+            const result = await fetchData(`/api/sales/${salesId}`, 'DELETE');
+            if (result) {
+                alert('판매 기록이 삭제되었습니다.');
+                loadSales();
+            }
         }
     } else {
-        alert('상품 삭제는 이미지 또는 목록 탭에서만 가능합니다.');
-        return;
-    }
+        // 상품 삭제 (이미지/목록 탭)
+        let productId = null;
+        if (currentTab === 'image') {
+            const selectedItem = document.querySelector('.image-item.selected');
+            if (selectedItem) {
+                productId = selectedItem.dataset.productId;
+            } else {
+                alert('삭제할 상품을 선택하세요.');
+                return;
+            }
+        } else if (currentTab === 'list') {
+            const selectedRow = document.querySelector('#product-table tbody tr.selected');
+            if (selectedRow) {
+                productId = selectedRow.dataset.productId;
+            } else {
+                alert('삭제할 상품을 선택하세요.');
+                return;
+            }
+        } else {
+            alert('상품 삭제는 이미지 또는 목록 탭에서만 가능합니다.');
+            return;
+        }
 
-    if (productId && confirm('정말 삭제하시겠습니까?')) {
-        const result = await fetchData(`/api/products/${productId}`, 'DELETE');
-        if (result) {
-            alert('상품이 삭제되었습니다.');
-            loadProducts();
+        if (productId && confirm('정말 삭제하시겠습니까?')) {
+            const result = await fetchData(`/api/products/${productId}`, 'DELETE');
+            if (result) {
+                alert('상품이 삭제되었습니다.');
+                loadProducts();
+            }
         }
     }
 }

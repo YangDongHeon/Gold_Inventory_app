@@ -132,31 +132,45 @@
             <span class="close-button">&times;</span>
             <h2>상품 상세 정보</h2>
             <div class="detail-layout">
-                <div class="detail-image-section">
-                    <img id="detail-main-image" src="" alt="Product Image">
-                    <div class="detail-extra-images" id="detail-extra-images"></div>
-                    <div class="detail-buttons">
-                        <button id="detail-sell-btn">판매</button>
-                        <button id="detail-close-btn">닫기</button>
-                    </div>
-                </div>
-                <div class="detail-form-section">
-                    <div class="form-row"><label>품목:</label><span id="detail-category"></span></div>
-                    <div class="form-row"><label>매입처(매입처상품번호):</label><span id="detail-supplier"></span></div>
-                    <div class="form-row"><label>상품명(상품번호):</label><span id="detail-name"></span></div>
-                    <div class="form-row"><label>함량:</label><span id="detail-karat"></span></div>
-                    <div class="form-row"><label>중량:</label><span id="detail-weight"></span></div>
-                    <div class="form-row"><label>사이즈:</label><span id="detail-size"></span></div>
-                    <div class="form-row"><label>총QB수량:</label><span id="detail-total-qb-qty"></span></div>
-                    <div class="form-row"><label>기/추:</label><span id="detail-basic-extra"></span></div>
-                    <div class="form-row"><label>중/보 물림:</label><span id="detail-mid-back-bulim"></span></div>
-                    <div class="form-row"><label>중/보 공임:</label><span id="detail-mid-back-labor"></span></div>
-                    <div class="form-row"><label>큐빅 공임:</label><span id="detail-cubic-labor"></span></div>
-                    <div class="form-row"><label>총공임:</label><span id="detail-total-labor"></span></div>
-                    <div class="form-row"><label>단종:</label><span id="detail-discontinued"></span></div>
-                    <div class="form-row"><label>재고:</label><span id="detail-stock-qty"></span></div>
-                    <div class="form-row"><label>비고:</label><span id="detail-notes"></span></div>
-                </div>
+              <div class="detail-group image-group">
+                <h3>이미지</h3>
+                <img id="detail-main-image" src="" alt="Product Image">
+                <div class="detail-extra-images" id="detail-extra-images"></div>
+              </div>
+
+              <div class="detail-group group-basic">
+                <h3>기본 정보</h3>
+                <div class="form-row"><label>품목:</label><span id="detail-category"></span></div>
+                <div class="form-row"><label>매입처(번호):</label><span id="detail-supplier"></span></div>
+                <div class="form-row"><label>상품명(번호):</label><span id="detail-name"></span></div>
+              </div>
+
+              <div class="detail-group group-spec">
+                <h3>사양</h3>
+                <div class="form-row"><label>함량:</label><span id="detail-karat"></span></div>
+                <div class="form-row"><label>중량:</label><span id="detail-weight"></span></div>
+                <div class="form-row"><label>사이즈:</label><span id="detail-size"></span></div>
+                <div class="form-row"><label>총QB수량:</label><span id="detail-total-qb-qty"></span></div>
+              </div>
+
+              <div class="detail-group group-cost">
+                <h3>비용 정보</h3>
+                <div class="form-row"><label>기/추:</label><span id="detail-basic-extra"></span></div>
+                <div class="form-row"><label>중/보 물림:</label><span id="detail-mid-back-bulim"></span></div>
+                <div class="form-row"><label>중/보 공임:</label><span id="detail-mid-back-labor"></span></div>
+                <div class="form-row"><label>큐빅 공임:</label><span id="detail-cubic-labor"></span></div>
+                <div class="form-row"><label>총공임:</label><span id="detail-total-labor"></span></div>
+              </div>
+
+              <div class="detail-group full-width">
+                <h3>비고</h3>
+                <div class="form-row"><span id="detail-notes"></span></div>
+              </div>
+
+              <div class="form-actions full-width">
+                <button id="detail-sell-btn">판매</button>
+                <button id="detail-close-btn">닫기</button>
+              </div>
             </div>
         </div>
     </div>
@@ -167,105 +181,123 @@
             <span class="close-button">&times;</span>
             <h2 id="product-form-title">새 상품 등록</h2>
             <form id="product-form">
+              <div class="form-group">
+                <h3>기본 정보</h3>
                 <div class="form-row">
-                    <label for="form-category">품목</label>
-                    <select id="form-category">
-                        <option value="">선택</option>
-                        <option value="E">E (귀걸이)</option>
-                        <option value="R">R (반지)</option>
-                        <option value="N">N (목걸이)</option>
-                        <option value="B">B (팔찌)</option>
-                        <option value="O">O (기타)</option>
-                    </select>
-                </div>
-                <div class="form-row">
-                    <label for="form-supplier-name">매입처명</label>
-                    <input type="text" id="form-supplier-name">
+                  <label for="form-category">품목:</label>
+                  <select id="form-category">
+                    <option value="">선택</option>
+                    <option value="E">E (귀걸이)</option>
+                    <option value="R">R (반지)</option>
+                    <option value="N">N (목걸이)</option>
+                    <option value="B">B (팔찌)</option>
+                    <option value="O">O (기타)</option>
+                  </select>
                 </div>
                 <div class="form-row">
-                    <label for="form-supplier-item-no">매입처상품번호</label>
-                    <input type="text" id="form-supplier-item-no">
+                  <label for="form-supplier-name">매입처명:</label>
+                  <input type="text" id="form-supplier-name">
                 </div>
                 <div class="form-row">
-                    <label for="form-product-code">상품번호</label>
-                    <input type="text" id="form-product-code">
+                  <label for="form-supplier-item-no">매입처상품번호:</label>
+                  <input type="text" id="form-supplier-item-no">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <h3>상품 기본</h3>
+                <div class="form-row">
+                  <label for="form-product-code">상품번호:</label>
+                  <input type="text" id="form-product-code">
                 </div>
                 <div class="form-row">
-                    <label for="form-name">상품명*</label>
-                    <input type="text" id="form-name" required>
+                  <label for="form-name">상품명*:</label>
+                  <input type="text" id="form-name" required>
                 </div>
                 <div class="form-row">
-                    <label for="form-karat">함량</label>
-                    <select id="form-karat">
-                        <option value="14K">14K</option>
-                        <option value="18K">18K</option>
-                        <option value="24K">24K</option>
-                    </select>
+                  <label for="form-karat">함량:</label>
+                  <select id="form-karat">
+                    <option value="14K">14K</option>
+                    <option value="18K">18K</option>
+                    <option value="24K">24K</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <h3>치수 및 수량</h3>
+                <div class="form-row">
+                  <label for="form-weight-g">중량 (g):</label>
+                  <input type="number" id="form-weight-g" step="0.01" value="0">
                 </div>
                 <div class="form-row">
-                    <label for="form-weight-g">중량</label>
-                    <input type="number" id="form-weight-g" step="0.01" value="0"> g
+                  <label for="form-size">사이즈:</label>
+                  <input type="text" id="form-size">
                 </div>
                 <div class="form-row">
-                    <label for="form-size">사이즈</label>
-                    <input type="text" id="form-size">
+                  <label for="form-total-qb-qty">총QB수량:</label>
+                  <input type="text" id="form-total-qb-qty">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <h3>금액 및 옵션:</h3>
+                <div class="form-row">
+                  <label>기/추:</label>
+                  <input type="text" id="form-basic-extra-left" placeholder="기본"> /
+                  <input type="text" id="form-basic-extra-right" placeholder="추가">
                 </div>
                 <div class="form-row">
-                    <label for="form-total-qb-qty">총QB수량</label>
-                    <input type="text" id="form-total-qb-qty">
+                  <label>중/보 물림:</label>
+                  <input type="text" id="form-mid-back-bulim-left" placeholder="중앙"> /
+                  <input type="text" id="form-mid-back-bulim-right" placeholder="보조">
                 </div>
                 <div class="form-row">
-                    <label>기/추</label>
-                    <input type="text" id="form-basic-extra-left" placeholder="기본"> /
-                    <input type="text" id="form-basic-extra-right" placeholder="추가">
+                  <label for="form-cubic-labor">큐빅 공임:</label>
+                  <input type="text" id="form-cubic-labor">
                 </div>
                 <div class="form-row">
-                    <label>중/보 물림</label>
-                    <input type="text" id="form-mid-back-bulim-left" placeholder="중앙"> /
-                    <input type="text" id="form-mid-back-bulim-right" placeholder="보조">
+                  <label for="form-total-labor">총공임:</label>
+                  <input type="text" id="form-total-labor">
+                </div>
+              </div>
+
+              <div class="form-group full-width">
+                <h3>재고 / 기타:</h3>
+                <div class="form-row">
+                  <label for="form-discontinued">단종:</label>
+                  <select id="form-discontinued">
+                    <option value="N">N</option>
+                    <option value="Y">Y</option>
+                  </select>
                 </div>
                 <div class="form-row">
-                    <label>중/보 공임</label>
-                    <input type="text" id="form-mid-back-labor-left" placeholder="중앙"> /
-                    <input type="text" id="form-mid-back-labor-right" placeholder="보조">
+                  <label for="form-stock-qty">재고수량:</label>
+                  <input type="number" id="form-stock-qty" value="0">
                 </div>
                 <div class="form-row">
-                    <label for="form-cubic-labor">큐빅 공임</label>
-                    <input type="text" id="form-cubic-labor">
+                  <label for="form-image-path">대표 이미지:</label>
+                  <input type="text" id="form-image-path" readonly>
+                  <button type="button" id="browse-image-btn">사진 선택</button>
+                  <input type="file" id="image-upload-input" accept="image/*" style="display: none;">
                 </div>
                 <div class="form-row">
-                    <label for="form-total-labor">총공임</label>
-                    <input type="text" id="form-total-labor">
+                  <input type="checkbox" id="form-is-favorite">
+                  <label for="form-is-favorite">즐겨찾기</label>
                 </div>
+              </div>
+
+              <div class="form-group full-width">
+                <h3>비고</h3>
                 <div class="form-row">
-                    <label for="form-discontinued">단종</label>
-                    <select id="form-discontinued">
-                        <option value="N">N</option>
-                        <option value="Y">Y</option>
-                    </select>
+                  <textarea id="form-notes"></textarea>
                 </div>
-                <div class="form-row">
-                    <label for="form-stock-qty">재고수량</label>
-                    <input type="number" id="form-stock-qty" value="0">
-                </div>
-                <div class="form-row">
-                    <label for="form-image-path">대표 이미지</label>
-                    <input type="text" id="form-image-path" readonly>
-                    <button type="button" id="browse-image-btn">사진 선택</button>
-                    <input type="file" id="image-upload-input" accept="image/*" style="display: none;">
-                </div>
-                <div class="form-row">
-                    <input type="checkbox" id="form-is-favorite">
-                    <label for="form-is-favorite">즐겨찾기</label>
-                </div>
-                <div class="form-row">
-                    <label for="form-notes">비고</label>
-                    <textarea id="form-notes"></textarea>
-                </div>
-                <div class="form-actions">
-                    <button type="submit" id="form-save-btn">저장</button>
-                    <button type="button" id="form-cancel-btn">취소</button>
-                </div>
+              </div>
+
+              <div class="form-actions full-width">
+                <button type="submit" id="form-save-btn">저장</button>
+                <button type="button" id="form-cancel-btn">취소</button>
+              </div>
             </form>
         </div>
     </div>
@@ -397,7 +429,7 @@
                     </div>
                 </div>
 
-                <div class="form-group">
+                <div class="form-group full-width">
                     <h3>비고</h3>
                     <textarea id="sr-notes"></textarea>
                 </div>
