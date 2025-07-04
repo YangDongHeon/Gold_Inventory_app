@@ -1,2 +1,2 @@
-PyQt5>=5.15.4
-SQLAlchemy>=1.4
+Flask
+Flask-Cors

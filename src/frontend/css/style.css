@@ -1,0 +1,512 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+    background-color: #f4f7f6;
+    color: #333;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.tabs {
+    display: flex;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #ddd;
+}
+
+.tab-button {
+    background-color: #f5f5f5;
+    border: 1px solid #d0d0d0;
+    border-bottom: none;
+    padding: 10px 15px;
+    cursor: pointer;
+    font-size: 16px;
+    border-radius: 5px 5px 0 0;
+    margin-right: 5px;
+    transition: background-color 0.3s ease;
+}
+
+.tab-button.active {
+    background-color: #fff;
+    border-color: #1890ff;
+    border-bottom: 2px solid #1890ff;
+    font-weight: bold;
+    color: #1890ff;
+}
+
+.tab-button:hover:not(.active) {
+    background-color: #e0e0e0;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.search-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    border: 1px solid #eee;
+}
+
+.search-bar input[type="text"],
+.search-bar input[type="date"],
+.search-bar select {
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+    flex: 1;
+    min-width: 120px;
+}
+
+.search-bar button {
+    padding: 8px 15px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s ease;
+}
+
+.search-bar button.search-button {
+    background-color: #1890ff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+}
+
+.search-bar button.search-button:hover {
+    background-color: #40a9ff;
+}
+
+.search-bar button.reset-button {
+    background-color: #f0f2f5;
+    color: #333;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.search-bar button.reset-button:hover {
+    background-color: #e0e0e0;
+}
+
+.image-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+    padding: 20px;
+}
+
+.image-item {
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 10px;
+    text-align: center;
+    width: 200px;
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.05);
+    cursor: pointer;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.image-item:hover {
+    transform: translateY(-5px);
+}
+
+.image-item.selected {
+    border-color: #1890ff;
+    box-shadow: 0 0 0 3px rgba(24, 144, 255, 0.3);
+}
+
+.image-item img {
+    max-width: 180px;
+    max-height: 180px;
+    height: auto;
+    border-radius: 4px;
+    margin-bottom: 10px;
+}
+
+.image-item p {
+    margin: 0;
+    font-size: 14px;
+    color: #555;
+}
+
+.product-table,
+.sales-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.product-table th,
+.sales-table th {
+    background-color: #f0f0f0;
+    padding: 10px;
+    border: 1px solid #dadada;
+    text-align: left;
+    font-weight: bold;
+}
+
+.product-table td,
+.sales-table td {
+    padding: 8px 10px;
+    border: 1px solid #eee;
+    vertical-align: middle;
+}
+
+.product-table tbody tr:nth-child(even),
+.sales-table tbody tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+.product-table tbody tr:hover {
+    background-color: #e6f4ff;
+}
+
+.product-table tbody tr.selected {
+    background-color: #bae7ff; /* Lighter blue for selected row */
+    border: 1px solid #1890ff;
+}
+
+.sales-table tbody tr:hover {
+    background-color: #e6f4ff;
+}
+
+.sales-table tbody tr.selected {
+    background-color: #bae7ff; /* Lighter blue for selected row */
+    border: 1px solid #1890ff;
+}
+
+.product-table td img {
+    max-width: 80px;
+    max-height: 80px;
+    display: block;
+    margin: 0 auto;
+}
+
+.action-buttons {
+    margin-top: 20px;
+    display: flex;
+    gap: 10px;
+}
+
+.action-buttons button {
+    background-color: #1890ff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+}
+
+.action-buttons button:hover {
+    background-color: #40a9ff;
+}
+
+/* Dialog Styles */
+.dialog {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+    justify-content: center;
+    align-items: center;
+}
+
+.dialog-content {
+    background-color: #fefefe;
+    margin: auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%; /* Could be more or less, depending on screen size */
+    max-width: 800px;
+    border-radius: 10px;
+    position: relative;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.close-button {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.close-button:hover,
+.close-button:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.dialog h2 {
+    margin-top: 0;
+    color: #1890ff;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+.detail-layout {
+    display: flex;
+    gap: 20px;
+}
+
+.detail-image-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.detail-image-section img {
+    max-width: 300px;
+    max-height: 300px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    margin-bottom: 10px;
+}
+
+.detail-extra-images {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.detail-extra-images img {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+}
+
+.detail-form-section {
+    flex: 2;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 10px 15px;
+    align-items: center;
+}
+
+.form-row label {
+    font-weight: bold;
+    color: #555;
+    text-align: right;
+}
+
+.form-row span {
+    color: #333;
+}
+
+.detail-buttons {
+    margin-top: 20px;
+    display: flex;
+    gap: 10px;
+}
+
+.detail-buttons button {
+    background-color: #1890ff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 15px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.detail-buttons button:hover {
+    background-color: #40a9ff;
+}
+
+/* Product Form Dialog */
+#product-form-dialog .dialog-content,
+#sales-record-dialog .dialog-content {
+    max-width: 600px;
+}
+
+#product-form,
+#sales-record-form {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 15px;
+}
+
+#product-form .form-row,
+#sales-record-form .form-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+#product-form .form-row label,
+#sales-record-form .form-row label {
+    flex-basis: 120px;
+    text-align: right;
+    font-weight: bold;
+    color: #555;
+}
+
+#product-form .form-row input[type="text"],
+#product-form .form-row input[type="number"],
+#product-form .form-row select,
+#product-form .form-row textarea,
+#sales-record-form .form-row input[type="text"],
+#sales-record-form .form-row input[type="number"],
+#sales-record-form .form-row input[type="date"],
+#sales-record-form .form-row select,
+#sales-record-form .form-row textarea {
+    flex-grow: 1;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+#product-form .form-row textarea,
+#sales-record-form .form-row textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+
+#product-form .form-row input[type="checkbox"] {
+    margin-left: 120px; /* Align with other inputs */
+}
+
+#product-form .form-actions,
+#sales-record-form .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+#product-form .form-actions button,
+#sales-record-form .form-actions button {
+    background-color: #1890ff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+}
+
+#product-form .form-actions button:hover,
+#sales-record-form .form-actions button:hover {
+    background-color: #40a9ff;
+}
+
+#product-form .form-actions button#form-cancel-btn,
+#sales-record-form .form-actions button#sr-cancel-btn {
+    background-color: #6c757d;
+}
+
+#product-form .form-actions button#form-cancel-btn:hover,
+#sales-record-form .form-actions button#sr-cancel-btn:hover {
+    background-color: #5a6268;
+}
+
+/* Sales Record Detail Dialog */
+#sales-record-detail-dialog .dialog-content {
+    max-width: 900px;
+}
+
+#sales-record-detail-dialog .detail-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+#sales-record-detail-dialog .detail-group {
+    border: 1px solid #eee;
+    border-radius: 8px;
+    padding: 15px;
+    background-color: #f9f9f9;
+}
+
+#sales-record-detail-dialog .detail-group h3 {
+    margin-top: 0;
+    color: #1890ff;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+}
+
+#sales-record-detail-dialog .detail-group .form-row {
+    display: flex;
+    margin-bottom: 8px;
+}
+
+#sales-record-detail-dialog .detail-group .form-row label {
+    font-weight: bold;
+    flex-basis: 150px;
+    color: #555;
+}
+
+#sales-record-detail-dialog .detail-group .form-row span {
+    flex-grow: 1;
+    color: #333;
+}
+
+#sales-record-detail-dialog .detail-group.full-width {
+    grid-column: span 2;
+}
+
+#sales-record-detail-dialog .form-actions {
+    margin-top: 20px;
+    text-align: right;
+}
+
+#sales-record-detail-dialog .form-actions button {
+    background-color: #1890ff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+}
+
+#sales-record-detail-dialog .form-actions button:hover {
+    background-color: #40a9ff;
+}
+
+/* Utility for split inputs */
+.form-row input[placeholder="기본"],
+.form-row input[placeholder="추가"],
+.form-row input[placeholder="중앙"],
+.form-row input[placeholder="보조"] {
+    width: 45%; /* Adjust as needed */
+    flex-grow: 0;
+}
+
+.form-row span.slash {
+    margin: 0 5px;
+}

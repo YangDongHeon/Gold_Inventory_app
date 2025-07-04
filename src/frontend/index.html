@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GOLD MANAGER</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="tabs">
+            <button class="tab-button active" data-tab="image">이미지</button>
+            <button class="tab-button" data-tab="list">목록</button>
+            <button class="tab-button" data-tab="sales">판매관리</button>
+        </div>
+
+        <div id="image-tab" class="tab-content active">
+            <div class="search-bar">
+                <select id="category-img" class="filter-select">
+                    <option value="">품목</option>
+                    <option value="E">E (귀걸이)</option>
+                    <option value="R">R (반지)</option>
+                    <option value="N">N (목걸이)</option>
+                    <option value="B">B (팔찌)</option>
+                    <option value="O">O (기타)</option>
+                </select>
+                <input type="text" id="supplier-name-img" placeholder="매입처명">
+                <input type="text" id="supplier-item-no-img" placeholder="매입처상품번호">
+                <input type="text" id="name-img" placeholder="상품명">
+                <input type="text" id="product-code-img" placeholder="상품번호">
+                <select id="discontinued-img" class="filter-select">
+                    <option value="">단종</option>
+                    <option value="Y">Y</option>
+                    <option value="N">N</option>
+                </select>
+                <button id="search-btn-img" class="search-button">검색</button>
+                <button id="reset-btn-img" class="reset-button">메인으로</button>
+            </div>
+            <div class="image-list" id="image-list"></div>
+        </div>
+
+        <div id="list-tab" class="tab-content">
+            <div class="search-bar">
+                <select id="category-list" class="filter-select">
+                    <option value="">품목</option>
+                    <option value="E">E (귀걸이)</option>
+                    <option value="R">R (반지)</option>
+                    <option value="N">N (목걸이)</option>
+                    <option value="B">B (팔찌)</option>
+                    <option value="O">O (기타)</option>
+                </select>
+                <input type="text" id="supplier-name-list" placeholder="매입처명">
+                <input type="text" id="supplier-item-no-list" placeholder="매입처상품번호">
+                <input type="text" id="name-list" placeholder="상품명">
+                <input type="text" id="product-code-list" placeholder="상품번호">
+                <select id="discontinued-list" class="filter-select">
+                    <option value="">단종</option>
+                    <option value="Y">Y</option>
+                    <option value="N">N</option>
+                </select>
+                <button id="search-btn-list" class="search-button">검색</button>
+                <button id="reset-btn-list" class="reset-button">메인으로</button>
+            </div>
+            <table class="product-table" id="product-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>이미지</th>
+                        <th>품목</th>
+                        <th>매입처</th>
+                        <th>매입처상품번호</th>
+                        <th>상품명</th>
+                        <th>상품번호</th>
+                        <th>함량</th>
+                        <th>중량(g)</th>
+                        <th>사이즈</th>
+                        <th>총QB수량</th>
+                        <th>기/추</th>
+                        <th>중/보 물림</th>
+                        <th>중/보 공임</th>
+                        <th>큐빅 공임</th>
+                        <th>총공임</th>
+                        <th>단종</th>
+                        <th>재고</th>
+                        <th>즐겨찾기</th>
+                        <th>수정</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Product rows will be inserted here -->
+                </tbody>
+            </table>
+        </div>
+
+        <div id="sales-tab" class="tab-content">
+            <div class="search-bar">
+                <label for="sales-start-date">판매일자:</label>
+                <input type="date" id="sales-start-date">
+                <span>~</span>
+                <input type="date" id="sales-end-date">
+                <input type="text" id="sales-customer-name" placeholder="고객명">
+                <input type="text" id="sales-product-name" placeholder="제품명">
+                <button id="sales-search-btn" class="search-button">검색</button>
+                <button id="sales-reset-btn" class="reset-button">메인으로</button>
+            </div>
+            <table class="sales-table" id="sales-table">
+                <thead>
+                    <tr>
+                        <th>날짜</th>
+                        <th>고객명</th>
+                        <th>상품명</th>
+                        <th>판매가</th>
+                        <th>수정</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Sales rows will be inserted here -->
+                </tbody>
+            </table>
+        </div>
+
+        <div class="action-buttons">
+            <button id="add-btn">추가</button>
+            <button id="delete-btn">삭제</button>
+            <button id="fav-only-btn">즐겨찾기 보기</button>
+        </div>
+    </div>
+
+    <!-- Product Detail Dialog -->
+    <div id="product-detail-dialog" class="dialog">
+        <div class="dialog-content">
+            <span class="close-button">&times;</span>
+            <h2>상품 상세 정보</h2>
+            <div class="detail-layout">
+                <div class="detail-image-section">
+                    <img id="detail-main-image" src="" alt="Product Image">
+                    <div class="detail-extra-images" id="detail-extra-images"></div>
+                    <div class="detail-buttons">
+                        <button id="detail-sell-btn">판매</button>
+                        <button id="detail-close-btn">닫기</button>
+                    </div>
+                </div>
+                <div class="detail-form-section">
+                    <div class="form-row"><label>품목:</label><span id="detail-category"></span></div>
+                    <div class="form-row"><label>매입처(매입처상품번호):</label><span id="detail-supplier"></span></div>
+                    <div class="form-row"><label>상품명(상품번호):</label><span id="detail-name"></span></div>
+                    <div class="form-row"><label>함량:</label><span id="detail-karat"></span></div>
+                    <div class="form-row"><label>중량:</label><span id="detail-weight"></span></div>
+                    <div class="form-row"><label>사이즈:</label><span id="detail-size"></span></div>
+                    <div class="form-row"><label>총QB수량:</label><span id="detail-total-qb-qty"></span></div>
+                    <div class="form-row"><label>기/추:</label><span id="detail-basic-extra"></span></div>
+                    <div class="form-row"><label>중/보 물림:</label><span id="detail-mid-back-bulim"></span></div>
+                    <div class="form-row"><label>중/보 공임:</label><span id="detail-mid-back-labor"></span></div>
+                    <div class="form-row"><label>큐빅 공임:</label><span id="detail-cubic-labor"></span></div>
+                    <div class="form-row"><label>총공임:</label><span id="detail-total-labor"></span></div>
+                    <div class="form-row"><label>단종:</label><span id="detail-discontinued"></span></div>
+                    <div class="form-row"><label>재고:</label><span id="detail-stock-qty"></span></div>
+                    <div class="form-row"><label>비고:</label><span id="detail-notes"></span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Product Add/Edit Dialog -->
+    <div id="product-form-dialog" class="dialog">
+        <div class="dialog-content">
+            <span class="close-button">&times;</span>
+            <h2 id="product-form-title">새 상품 등록</h2>
+            <form id="product-form">
+                <div class="form-row">
+                    <label for="form-category">품목</label>
+                    <select id="form-category">
+                        <option value="">선택</option>
+                        <option value="E">E (귀걸이)</option>
+                        <option value="R">R (반지)</option>
+                        <option value="N">N (목걸이)</option>
+                        <option value="B">B (팔찌)</option>
+                        <option value="O">O (기타)</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <label for="form-supplier-name">매입처명</label>
+                    <input type="text" id="form-supplier-name">
+                </div>
+                <div class="form-row">
+                    <label for="form-supplier-item-no">매입처상품번호</label>
+                    <input type="text" id="form-supplier-item-no">
+                </div>
+                <div class="form-row">
+                    <label for="form-product-code">상품번호</label>
+                    <input type="text" id="form-product-code">
+                </div>
+                <div class="form-row">
+                    <label for="form-name">상품명*</label>
+                    <input type="text" id="form-name" required>
+                </div>
+                <div class="form-row">
+                    <label for="form-karat">함량</label>
+                    <select id="form-karat">
+                        <option value="14K">14K</option>
+                        <option value="18K">18K</option>
+                        <option value="24K">24K</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <label for="form-weight-g">중량</label>
+                    <input type="number" id="form-weight-g" step="0.01" value="0"> g
+                </div>
+                <div class="form-row">
+                    <label for="form-size">사이즈</label>
+                    <input type="text" id="form-size">
+                </div>
+                <div class="form-row">
+                    <label for="form-total-qb-qty">총QB수량</label>
+                    <input type="text" id="form-total-qb-qty">
+                </div>
+                <div class="form-row">
+                    <label>기/추</label>
+                    <input type="text" id="form-basic-extra-left" placeholder="기본"> /
+                    <input type="text" id="form-basic-extra-right" placeholder="추가">
+                </div>
+                <div class="form-row">
+                    <label>중/보 물림</label>
+                    <input type="text" id="form-mid-back-bulim-left" placeholder="중앙"> /
+                    <input type="text" id="form-mid-back-bulim-right" placeholder="보조">
+                </div>
+                <div class="form-row">
+                    <label>중/보 공임</label>
+                    <input type="text" id="form-mid-back-labor-left" placeholder="중앙"> /
+                    <input type="text" id="form-mid-back-labor-right" placeholder="보조">
+                </div>
+                <div class="form-row">
+                    <label for="form-cubic-labor">큐빅 공임</label>
+                    <input type="text" id="form-cubic-labor">
+                </div>
+                <div class="form-row">
+                    <label for="form-total-labor">총공임</label>
+                    <input type="text" id="form-total-labor">
+                </div>
+                <div class="form-row">
+                    <label for="form-discontinued">단종</label>
+                    <select id="form-discontinued">
+                        <option value="N">N</option>
+                        <option value="Y">Y</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <label for="form-stock-qty">재고수량</label>
+                    <input type="number" id="form-stock-qty" value="0">
+                </div>
+                <div class="form-row">
+                    <label for="form-image-path">대표 이미지</label>
+                    <input type="text" id="form-image-path" readonly>
+                    <button type="button" id="browse-image-btn">사진 선택</button>
+                    <input type="file" id="image-upload-input" accept="image/*" style="display: none;">
+                </div>
+                <div class="form-row">
+                    <input type="checkbox" id="form-is-favorite">
+                    <label for="form-is-favorite">즐겨찾기</label>
+                </div>
+                <div class="form-row">
+                    <label for="form-notes">비고</label>
+                    <textarea id="form-notes"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" id="form-save-btn">저장</button>
+                    <button type="button" id="form-cancel-btn">취소</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Sales Record Dialog -->
+    <div id="sales-record-dialog" class="dialog">
+        <div class="dialog-content">
+            <span class="close-button">&times;</span>
+            <h2 id="sales-record-form-title">판매 기록 등록</h2>
+            <form id="sales-record-form">
+                <div class="form-group">
+                    <h3>기본 정보</h3>
+                    <div class="form-row">
+                        <label for="sr-sale-date">판매일:</label>
+                        <input type="date" id="sr-sale-date">
+                    </div>
+                    <div class="form-row">
+                        <label for="sr-customer-name">고객명:</label>
+                        <input type="text" id="sr-customer-name">
+                    </div>
+                    <div class="form-row">
+                        <label for="sr-sale-type">구분:</label>
+                        <select id="sr-sale-type">
+                            <option value="판매">판매</option>
+                            <option value="반품">반품</option>
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <label for="sr-return-reason">반품사유:</label>
+                        <input type="text" id="sr-return-reason">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <h3>상품 정보</h3>
+                    <div class="form-row">
+                        <label for="sr-product-supplier">매입처:</label>
+                        <input type="text" id="sr-product-supplier">
+                    </div>
+                    <div class="form-row">
+                        <label for="sr-product-name">상품명:</label>
+                        <input type="text" id="sr-product-name">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <h3>가격 정보</h3>
+                    <div class="form-row">
+                        <label for="sr-purchase-market-price">매입시세:</label>
+                        <input type="number" id="sr-purchase-market-price" value="0"> 원
+                    </div>
+                    <div class="form-row">
+                        <label for="sr-sale-market-price">판매시세:</label>
+                        <input type="number" id="sr-sale-market-price" value="0"> 원
+                    </div>
+                    <div class="form-row">
+                        <label for="sr-final-sale-price">판매가:</label>
+                        <input type="number" id="sr-final-sale-price" value="0"> 원
+                    </div>
+                    <div class="form-row">
+                        <label>기/추:</label>
+                        <input type="text" id="sr-basic-extra-left" placeholder="기본"> /
+                        <input type="text" id="sr-basic-extra-right" placeholder="추가">
+                    </div>
+                    <div class="form-row">
+                        <label>중/보 물림:</label>
+                        <input type="text" id="sr-mid-back-bulim-left" placeholder="중앙"> /
+                        <input type="text" id="sr-mid-back-bulim-right" placeholder="보조">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <h3>석 정보</h3>
+                    <div class="form-row">
+                        <label for="sr-karat-unit">함량/단위:</label>
+                        <select id="sr-karat-unit">
+                            <option value="14K">14K</option>
+                            <option value="18K">18K</option>
+                            <option value="24K">24K</option>
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <label for="sr-karat-g">함량(g):</label>
+                        <input type="text" id="sr-karat-g">
+                    </div>
+                    <div class="form-row">
+                        <label for="sr-quantity">수량:</label>
+                        <input type="number" id="sr-quantity" value="0">
+                    </div>
+                    <div class="form-row">
+                        <label for="sr-color">색상:</label>
+                        <input type="text" id="sr-color">
+                    </div>
+                    <div class="form-row">
+                        <label for="sr-size">사이즈:</label>
+                        <input type="text" id="sr-size">
+                    </div>
+                    <div class="form-row">
+                        <label for="sr-main-stone-type">메인석 종류:</label>
+                        <input type="text" id="sr-main-stone-type">
+                    </div>
+                    <div class="form-row">
+                        <label for="sr-main-stone-quantity">메인석 수량:</label>
+                        <input type="number" id="sr-main-stone-quantity" value="0">
+                    </div>
+                    <div class="form-row">
+                        <label for="sr-main-stone-purchase-price">메인석 매입가:</label>
+                        <input type="number" id="sr-main-stone-purchase-price" value="0"> 원
+                    </div>
+                    <div class="form-row">
+                        <label for="sr-main-stone-sale-price">메인석 판매가:</label>
+                        <input type="number" id="sr-main-stone-sale-price" value="0"> 원
+                    </div>
+                    <div class="form-row">
+                        <label for="sr-aux-stone-type">보조석 종류:</label>
+                        <input type="text" id="sr-aux-stone-type">
+                    </div>
+                    <div class="form-row">
+                        <label for="sr-aux-stone-quantity">보조석 수량:</label>
+                        <input type="number" id="sr-aux-stone-quantity" value="0">
+                    </div>
+                    <div class="form-row">
+                        <label for="sr-aux-stone-purchase-price">보조석 매입가:</label>
+                        <input type="number" id="sr-aux-stone-purchase-price" value="0"> 원
+                    </div>
+                    <div class="form-row">
+                        <label for="sr-aux-stone-sale-price">보조석 판매가:</label>
+                        <input type="number" id="sr-aux-stone-sale-price" value="0"> 원
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <h3>비고</h3>
+                    <textarea id="sr-notes"></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" id="sr-save-btn">저장</button>
+                    <button type="button" id="sr-cancel-btn">취소</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Sales Record Detail Dialog -->
+    <div id="sales-record-detail-dialog" class="dialog">
+        <div class="dialog-content">
+            <span class="close-button">&times;</span>
+            <h2>판매 기록 상세</h2>
+            <div class="detail-layout">
+                <div class="detail-group">
+                    <h3>기본 정보</h3>
+                    <div class="form-row"><label>판매일:</label><span id="srd-sale-date"></span></div>
+                    <div class="form-row"><label>고객명:</label><span id="srd-customer-name"></span></div>
+                    <div class="form-row"><label>구분:</label><span id="srd-sale-type"></span></div>
+                    <div class="form-row"><label>반품사유:</label><span id="srd-return-reason"></span></div>
+                </div>
+                <div class="detail-group">
+                    <h3>상품 정보</h3>
+                    <div class="form-row"><label>매입처:</label><span id="srd-product-supplier"></span></div>
+                    <div class="form-row"><label>상품명:</label><span id="srd-product-name"></span></div>
+                </div>
+                <div class="detail-group">
+                    <h3>가격 정보</h3>
+                    <div class="form-row"><label>매입시세:</label><span id="srd-purchase-market-price"></span></div>
+                    <div class="form-row"><label>판매시세:</label><span id="srd-sale-market-price"></span></div>
+                    <div class="form-row"><label>판매가:</label><span id="srd-final-sale-price"></span></div>
+                    <div class="form-row"><label>기/추:</label><span id="srd-basic-extra"></span></div>
+                    <div class="form-row"><label>중/보 물림:</label><span id="srd-mid-back-bulim"></span></div>
+                </div>
+                <div class="detail-group">
+                    <h3>석 정보</h3>
+                    <div class="form-row"><label>수량:</label><span id="srd-quantity"></span></div>
+                    <div class="form-row"><label>색상:</label><span id="srd-color"></span></div>
+                    <div class="form-row"><label>사이즈:</label><span id="srd-size"></span></div>
+                    <div class="form-row"><label>메인석 종류:</label><span id="srd-main-stone-type"></span></div>
+                    <div class="form-row"><label>메인석 수량:</label><span id="srd-main-stone-quantity"></span></div>
+                    <div class="form-row"><label>메인석 매입가:</label><span id="srd-main-stone-purchase-price"></span></div>
+                    <div class="form-row"><label>메인석 판매가:</label><span id="srd-main-stone-sale-price"></span></div>
+                    <div class="form-row"><label>보조석 종류:</label><span id="srd-aux-stone-type"></span></div>
+                    <div class="form-row"><label>보조석 수량:</label><span id="srd-aux-stone-quantity"></span></div>
+                    <div class="form-row"><label>보조석 매입가:</label><span id="srd-aux-stone-purchase-price"></span></div>
+                    <div class="form-row"><label>보조석 판매가:</label><span id="srd-aux-stone-sale-price"></span></div>
+                </div>
+                <div class="detail-group full-width">
+                    <h3>비고</h3>
+                    <span id="srd-notes"></span>
+                </div>
+            </div>
+            <div class="form-actions">
+                <button id="srd-close-btn">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/script.js"></script>
+</body>
+</html>

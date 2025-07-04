@@ -1,7 +1,9 @@
 from sqlalchemy import Column, Integer, String, Float, Boolean, JSON, ForeignKey, Date
 from sqlalchemy.orm import relationship
-from db import Base
+from .db import Base
 import datetime
+from pydantic import BaseModel, Field
+from typing import List, Optional
 
 class Product(Base):
     __tablename__ = 'products'
@@ -63,3 +65,80 @@ class SalesRecord(Base):
 
     notes = Column(String)
     sale_date = Column(Date, default=datetime.date.today, index=True)
+
+
+# Pydantic models for API
+class ProductBase(BaseModel):
+    category: Optional[str] = None
+    name: Optional[str] = None
+    supplier_name: Optional[str] = None
+    supplier_item_no: Optional[str] = None
+    product_code: Optional[str] = None
+    karat: Optional[str] = None
+    weight_g: Optional[float] = None
+    size: Optional[str] = None
+    total_qb_qty: Optional[str] = None
+    basic_extra: Optional[str] = None
+    mid_back_bulim: Optional[str] = None
+    mid_back_labor: Optional[str] = None
+    cubic_labor: Optional[str] = None
+    total_labor: Optional[str] = None
+    discontinued: Optional[bool] = None
+    stock_qty: Optional[int] = None
+    image_path: Optional[str] = None
+    extra_images: Optional[List[str]] = None
+    notes: Optional[str] = None
+    is_favorite: Optional[bool] = None
+
+class ProductCreate(ProductBase):
+    pass
+
+class ProductUpdate(ProductBase):
+    pass
+
+class ProductInDB(ProductBase):
+    id: int
+    image_path: Optional[str] = Field(None, alias="image_path") # Ensure image_path is handled
+
+    class Config:
+        orm_mode = True
+        allow_population_by_field_name = True # Allow setting by field name
+
+class SalesRecordBase(BaseModel):
+    customer_name: Optional[str] = None
+    sale_type: Optional[str] = None
+    return_reason: Optional[str] = None
+    purchase_market_price: Optional[int] = None
+    sale_market_price: Optional[int] = None
+    final_sale_price: Optional[int] = None
+    product_spplier: Optional[str] = None
+    product_name: Optional[str] = None
+    basic_extra: Optional[str] = None
+    mid_back_bulim: Optional[str] = None
+    karat_unit: Optional[str] = None
+    karat_g: Optional[str] = None
+    quantity: Optional[int] = None
+    color: Optional[str] = None
+    size: Optional[str] = None
+    main_stone_type: Optional[str] = None
+    main_stone_quantity: Optional[int] = None
+    main_stone_purchase_price: Optional[int] = None
+    main_stone_sale_price: Optional[int] = None
+    aux_stone_type: Optional[str] = None
+    aux_stone_quantity: Optional[int] = None
+    aux_stone_purchase_price: Optional[int] = None
+    aux_stone_sale_price: Optional[int] = None
+    notes: Optional[str] = None
+    sale_date: Optional[datetime.date] = None
+
+class SalesRecordCreate(SalesRecordBase):
+    pass
+
+class SalesRecordUpdate(SalesRecordBase):
+    pass
+
+class SalesRecordInDB(SalesRecordBase):
+    id: int
+
+    class Config:
+        orm_mode = True
