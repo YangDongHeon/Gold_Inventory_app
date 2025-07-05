@@ -18,3 +18,15 @@ dist/
 # Executable and spec files
 *.exe
 *.spec
+__pycache__/
+
+# Ignore Python cache files everywhere
+__pycache__/
+*.py[cod]
+
+# Just in case any OS-specific or backup files sneak in
+*.pyo
+*.pyd
+*.pdb
+*.swp
+*~
