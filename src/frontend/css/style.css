@@ -11,7 +11,7 @@ body {
 }
 
 .container {
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
     background-color: #fff;
     padding: 20px;
@@ -165,6 +165,7 @@ body {
     border: 1px solid #dadada;
     text-align: left;
     font-weight: bold;
+    font-size: 12px;
 }
 
 .product-table td,
@@ -172,6 +173,13 @@ body {
     padding: 8px 10px;
     border: 1px solid #eee;
     vertical-align: middle;
+    white-space: pre-line;
+    font-size: 12px;
+}
+
+.product-table {
+    width: 100%;
+    table-layout: auto;
 }
 
 .product-table tbody tr:nth-child(even),
@@ -383,9 +391,18 @@ body {
     gap: 10px;
 }
 
-#product-form .form-row label,
+
+/* Increase product form label width by 10% */
+#product-form .form-row label {
+    flex-basis: 132px;
+    text-align: right;
+    font-weight: bold;
+    color: #555;
+}
+
+/* Increase sales record form label width by 10% */
 #sales-record-form .form-row label {
-    flex-basis: 120px;
+    flex-basis: 132px;
     text-align: right;
     font-weight: bold;
     color: #555;
@@ -458,6 +475,7 @@ body {
     width: auto;
     min-width: 600px;
     max-width: 80vw;
+    font-size: 14px;
 }
 
 #sales-record-detail-dialog .detail-layout {
@@ -476,10 +494,6 @@ body {
     width: auto;
 }
 
-#sales-record-detail-dialog .detail-group .form-row label,
-#sales-record-detail-dialog .detail-group .form-row span {
-    text-align: left;
-}
 
 #sales-record-detail-dialog .detail-group h3 {
     margin-top: 0;
@@ -489,31 +503,24 @@ body {
     margin-bottom: 15px;
 }
 
+/* Magic aligning and increased line spacing in Sales Record detail */
 #sales-record-detail-dialog .detail-group .form-row {
     display: flex;
-    margin-bottom: 8px;
+    margin-bottom: 12px; /* increased line spacing */
 }
-
 #sales-record-detail-dialog .detail-group .form-row label {
+    flex: 0 0 100px;
     font-weight: bold;
-    flex-basis: 150px;
     color: #555;
+    text-align: left;
 }
-
 #sales-record-detail-dialog .detail-group .form-row span {
     flex-grow: 1;
     color: #333;
+    text-align: left;
 }
 
-#sales-record-detail-dialog .detail-group.full-width {
-    grid-column: span 2;
-}
-
-#sales-record-detail-dialog .form-actions {
-    margin-top: 20px;
-    text-align: right;
-}
-
+/* Match close button style in Sales Record detail to other dialogs */
 #sales-record-detail-dialog .form-actions button {
     background-color: #1890ff;
     color: white;
@@ -524,10 +531,10 @@ body {
     font-size: 16px;
     transition: background-color 0.3s ease;
 }
-
 #sales-record-detail-dialog .form-actions button:hover {
     background-color: #40a9ff;
 }
+
 
 /* Utility for split inputs */
 .form-row input[placeholder="기본"],
@@ -554,35 +561,42 @@ body {
 
 /* Product Detail Dialog Layout */
 #product-detail-dialog .dialog-content {
-    max-width: 900px;
+    /* Fixed width to accommodate all columns and gaps */
+    width: 760px;
+    min-width: 760px;
+    height: auto;
+    font-size: 14px;
+    padding: 20px;
 }
 
 #product-detail-dialog .detail-layout {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: 230px 300px auto;
     grid-template-rows: auto auto auto;
     grid-template-areas:
         "image basic spec"
         "image cost notes"
         "image actions actions";
-    gap: 15px;
+    grid-column-gap: 15px;
+    grid-row-gap: 5px;
 }
 
-#product-detail-dialog .image-group { grid-area: image; }
-#product-detail-dialog .group-basic { grid-area: basic; }
-#product-detail-dialog .group-spec { grid-area: spec; }
-#product-detail-dialog .group-cost { grid-area: cost; }
-#product-detail-dialog .detail-group.full-width { grid-area: notes; }
-#product-detail-dialog .form-actions.full-width { grid-area: actions; justify-self: end; }
-
+/* Image Section */
 #product-detail-dialog .image-group {
+    grid-area: image;
     display: flex;
     flex-direction: column;
     align-items: center;
+    padding: 0;
+    width: 230px;
+    height: 350px;
+    box-sizing: border-box;
+    border: 2px dashed #1890ff;
+    background-color: #f0f8ff;
 }
-
 #product-detail-dialog .image-group img {
-    max-width: 300px;
+    margin: 0;
+    max-width: 220px;
     max-height: 300px;
     width: auto;
     height: auto;
@@ -590,7 +604,39 @@ body {
     border-radius: 5px;
 }
 
-/* Product Detail Dialog group header and box styling (match Sales Record detail style) */
+/* Basic & Cost Sections */
+#product-detail-dialog .group-basic {
+    grid-area: basic;
+    width: 300px;
+}
+#product-detail-dialog .group-cost {
+    grid-area: cost;
+    width: 300px;
+}
+
+/* Spec Section */
+#product-detail-dialog .group-spec {
+    grid-area: spec;
+}
+
+/* Notes & Actions */
+#product-detail-dialog .detail-group.full-width {
+    grid-area: notes;
+}
+#product-detail-dialog .form-actions.full-width {
+    grid-area: actions;
+    justify-self: end;
+}
+
+#product-detail-dialog .detail-group {
+    box-sizing: border-box;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    padding: 10px;
+    background-color: #f9f9f9;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    margin-bottom: 8px;
+}
 #product-detail-dialog .detail-group h3 {
     margin-top: 0;
     color: #1890ff;
@@ -600,15 +646,38 @@ body {
     font-size: 18px;
 }
 
-#product-detail-dialog .detail-group {
-    border: 1px solid #eee;
-    border-radius: 8px;
-    padding: 10px;
-    background-color: #f9f9f9;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    margin-bottom: 8px;
+/* Form Rows and Labels */
+#product-detail-dialog .detail-group .form-row {
+    display: flex;
+    margin-bottom: 6px;
+}
+#product-detail-dialog .detail-group .form-row label {
+    font-weight: bold;
+    flex-basis: 100px;
+    color: #555;
+    text-align: left;
+}
+#product-detail-dialog .detail-group .form-row span {
+    flex-grow: 1;
+    color: #333;
+    text-align: left;
 }
 
-#product-detail-dialog .detail-layout {
-    gap: 15px;
+/* Buttons */
+#product-detail-dialog .form-actions {
+    margin-top: 20px;
+    text-align: right;
+}
+#product-detail-dialog .form-actions button {
+    background-color: #1890ff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+}
+#product-detail-dialog .form-actions button:hover {
+    background-color: #40a9ff;
 }

@@ -7,7 +7,9 @@ from datetime import date
 from fastapi import FastAPI, Depends, HTTPException, Query
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-import uvicorn
+import threading
+import webview
+from uvicorn import Config, Server
 
 from .db import init_db
 from .models import Product, SalesRecord, ProductCreate, ProductUpdate, ProductInDB, SalesRecordCreate, SalesRecordUpdate, SalesRecordInDB
@@ -127,7 +129,17 @@ def delete_sales_record(sales_id: int):
 
 def main():
     init_db()
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    # Start the FastAPI server in a background thread
+    config = Config(app, host="127.0.0.1", port=8000, log_level="info", workers=8)
+    server = Server(config)
+    server_thread = threading.Thread(target=server.run, daemon=True)
+    server_thread.start()
+    # Open a native window for the frontend
+    webview.create_window("Gold Inventory App", "http://127.0.0.1:8000")
+    webview.start()
+    # When window closes, shut down the server
+    server.should_exit = True
+    server_thread.join()
 
 # Serve images from the images directory
 @app.get("/images/{filename}")

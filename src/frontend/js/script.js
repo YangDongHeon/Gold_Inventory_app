@@ -14,11 +14,20 @@ function hideDialog(dialogId) {
 }
 
 function split2(s) {
+    // Always return two non-empty strings to preserve line height
     if (s && s.includes('/')) {
-        const [left, right] = s.split('/', 2);
-        return [left.trim(), right.trim()];
+        let [left, right] = s.split('/', 2);
+        left = left.trim() || '\u00A0';
+        right = right.trim() || '\u00A0';
+        return [left, right];
     }
-    return [s ? s.trim() : '', ''];
+    const val = s ? s.trim() : '';
+    if (val) {
+        // Single value: display on first line, blank second line
+        return [val, '\u00A0'];
+    }
+    // Both blank
+    return ['\u00A0', '\u00A0'];
 }
 
 function join2(a, b) {
@@ -137,9 +146,9 @@ function displayProducts(products) {
         row.addEventListener('dblclick', () => showProductDetail(p.id));
 
         const categoryKor = categoryMap[p.category] || p.category;
-        const basicExtra = split2(p.basic_extra).join('\n');
-        const midBackBulim = split2(p.mid_back_bulim).join('\n');
-        const midBackLabor = split2(p.mid_back_labor).join('\n');
+        const [basicLeft, basicRight] = split2(p.basic_extra);
+        const [bulimLeft, bulimRight] = split2(p.mid_back_bulim);
+        const [laborLeft, laborRight] = split2(p.mid_back_labor);
 
         row.innerHTML = `
             <td>${p.id}</td>
@@ -153,9 +162,18 @@ function displayProducts(products) {
             <td>${p.weight_g}</td>
             <td>${p.size}</td>
             <td>${p.total_qb_qty}</td>
-            <td>${basicExtra}</td>
-            <td>${midBackBulim}</td>
-            <td>${midBackLabor}</td>
+            <td>
+              <div>${basicLeft}</div>
+              <div>${basicRight}</div>
+            </td>
+            <td>
+              <div>${bulimLeft}</div>
+              <div>${bulimRight}</div>
+            </td>
+            <td>
+              <div>${laborLeft}</div>
+              <div>${laborRight}</div>
+            </td>
             <td>${p.cubic_labor}</td>
             <td>${p.total_labor}</td>
             <td>${p.discontinued ? 'Y' : 'N'}</td>
@@ -234,15 +252,20 @@ async function showProductDetail(productId) {
 
     document.getElementById('detail-main-image').src = product.image_path ? '/images/' + product.image_path.split('/').pop() : '';
     document.getElementById('detail-category').textContent = product.category;
-    document.getElementById('detail-supplier').textContent = `${product.supplier_name} (${product.supplier_item_no})`;
-    document.getElementById('detail-name').textContent = `${product.name} (${product.product_code})`;
+    document.getElementById('detail-supplier-name').textContent = product.supplier_name;
+    document.getElementById('detail-supplier-item-no').textContent = product.supplier_item_no;
+    document.getElementById('detail-name').textContent = product.name;
+    document.getElementById('detail-product-code').textContent = product.product_code;
     document.getElementById('detail-karat').textContent = product.karat;
     document.getElementById('detail-weight').textContent = `${product.weight_g} g`;
     document.getElementById('detail-size').textContent = product.size;
     document.getElementById('detail-total-qb-qty').textContent = product.total_qb_qty;
-    document.getElementById('detail-basic-extra').textContent = product.basic_extra.replace('/', ' / ');
-    document.getElementById('detail-mid-back-bulim').textContent = product.mid_back_bulim.replace('/', ' / ');
-    document.getElementById('detail-mid-back-labor').textContent = product.mid_back_labor.replace('/', ' / ');
+    const [basicLeft, basicRight] = split2(product.basic_extra);
+    document.getElementById('detail-basic-extra').textContent = `${basicLeft} / ${basicRight}`;
+    const [bulimLeft, bulimRight] = split2(product.mid_back_bulim);
+    document.getElementById('detail-mid-back-bulim').textContent = `${bulimLeft} / ${bulimRight}`;
+    const [laborLeft, laborRight] = split2(product.mid_back_labor);
+    document.getElementById('detail-mid-back-labor').textContent = `${laborLeft} / ${laborRight}`;
     document.getElementById('detail-cubic-labor').textContent = product.cubic_labor;
     document.getElementById('detail-total-labor').textContent = product.total_labor;
     document.getElementById('detail-notes').textContent = product.notes || '-';
@@ -393,8 +416,10 @@ async function showSalesRecordDetail(salesId) {
     document.getElementById('srd-purchase-market-price').textContent = formatCurrency(record.purchase_market_price);
     document.getElementById('srd-sale-market-price').textContent = formatCurrency(record.sale_market_price);
     document.getElementById('srd-final-sale-price').textContent = formatCurrency(record.final_sale_price);
-    document.getElementById('srd-basic-extra').textContent = record.basic_extra.replace('/', ' / ');
-    document.getElementById('srd-mid-back-bulim').textContent = record.mid_back_bulim.replace('/', ' / ');
+    const [sBasicLeft, sBasicRight] = split2(record.basic_extra);
+    document.getElementById('srd-basic-extra').textContent = `${sBasicLeft} / ${sBasicRight}`;
+    const [sBulimLeft, sBulimRight] = split2(record.mid_back_bulim);
+    document.getElementById('srd-mid-back-bulim').textContent = `${sBulimLeft} / ${sBulimRight}`;
     document.getElementById('srd-quantity').textContent = record.quantity;
     document.getElementById('srd-color').textContent = record.color;
     document.getElementById('srd-size').textContent = record.size;
