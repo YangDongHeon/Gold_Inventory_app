@@ -13,6 +13,11 @@ function hideDialog(dialogId) {
     dialog.classList.remove('active');
 }
 
+function getImageUrl(imagePath) {
+    if (!imagePath) return '';
+    const filename = imagePath.split(/[\\/]/).pop(); // 경로에서 파일명 추출
+    return filename.startsWith('/images/') ? filename : `/images/${filename}`;
+}
 function split2(s) {
     // Always return two non-empty strings to preserve line height
     if (s && s.includes('/')) {
@@ -133,7 +138,7 @@ function displayProducts(products) {
         imageItem.className = 'image-item';
         imageItem.dataset.productId = p.id;
         imageItem.innerHTML = `
-            <img src="${p.image_path ? '/images/' + p.image_path.split('/').pop() : ''}" alt="${p.name}">
+            <img src="${getImageUrl(p.image_path)}" alt="${p.name}">
             <p>${p.is_favorite ? '★ ' : ''}${p.name}</p>
             <p>${p.karat} ${p.weight_g}g</p>
         `;
@@ -152,7 +157,7 @@ function displayProducts(products) {
 
         row.innerHTML = `
             <td>${p.id}</td>
-            <td><img src="${p.image_path ? '/images/' + p.image_path.split('/').pop() : ''}" alt="${p.name}"></td>
+            <td><img src="${getImageUrl(p.image_path)}" alt="${p.name}"></td>
             <td>${categoryKor}</td>
             <td>${p.supplier_name}</td>
             <td>${p.supplier_item_no}</td>
@@ -250,7 +255,7 @@ async function showProductDetail(productId) {
     const product = await fetchData(`/api/products/${productId}`);
     if (!product) return;
 
-    document.getElementById('detail-main-image').src = product.image_path ? '/images/' + product.image_path.split('/').pop() : '';
+    document.getElementById('detail-main-image').src = getImageUrl(product.image_path);
     document.getElementById('detail-category').textContent = product.category;
     document.getElementById('detail-supplier-name').textContent = product.supplier_name;
     document.getElementById('detail-supplier-item-no').textContent = product.supplier_item_no;

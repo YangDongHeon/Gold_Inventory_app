@@ -161,7 +161,7 @@ async def upload_image(file: UploadFile = File(...)):
         async with aiofiles.open(file_path, "wb") as out_file:
             while content := await file.read(1024):  # read in chunks
                 await out_file.write(content)
-        return {"filename": file.filename, "path": str(file_path)}
+        return {"filename": file.filename, "path": file.filename}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Could not upload file: {e}")
 

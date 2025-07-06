@@ -681,3 +681,13 @@ body {
 #product-detail-dialog .form-actions button:hover {
     background-color: #40a9ff;
 }
+
+.table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.product-table {
+    min-width: 1200px; /* 테이블 너비가 이보다 작으면 스크롤 안 생김 */
+}

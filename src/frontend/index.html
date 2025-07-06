@@ -61,35 +61,39 @@
                 <button id="search-btn-list" class="search-button">검색</button>
                 <button id="reset-btn-list" class="reset-button">메인으로</button>
             </div>
-            <table class="product-table" id="product-table">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>이미지</th>
-                        <th>품목</th>
-                        <th>매입처</th>
-                        <th>매입처상품번호</th>
-                        <th>상품명</th>
-                        <th>상품번호</th>
-                        <th>함량</th>
-                        <th>중량(g)</th>
-                        <th>사이즈</th>
-                        <th>총QB수량</th>
-                        <th>기/추</th>
-                        <th>중/보 물림</th>
-                        <th>중/보 공임</th>
-                        <th>큐빅 공임</th>
-                        <th>총공임</th>
-                        <th>단종</th>
-                        <th>재고</th>
-                        <th>즐겨찾기</th>
-                        <th>수정</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Product rows will be inserted here -->
-                </tbody>
-            </table>
+          
+            <!-- ✅ 여기 div.table-wrapper로 감싸줍니다 -->
+            <div class="table-wrapper">
+                <table class="product-table" id="product-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>이미지</th>
+                            <th>품목</th>
+                            <th style="min-width: 40px;">매입처</th>
+                            <th>매입처상품번호</th>
+                            <th>상품명</th>
+                            <th>상품번호</th>
+                            <th>함량</th>
+                            <th style="width: 25px;">중량(g)</th>
+                            <th>사이즈</th>
+                            <th>QB</th>
+                            <th>기/추</th>
+                            <th>중/보 물림</th>
+                            <th>중/보 공임</th>
+                            <th>큐빅 공임</th>
+                            <th>총공임</th>
+                            <th style="width: 18px;">단종</th>
+                            <th style="width: 18px;">재고</th>
+                            <th style="width: 20px;">★</th>
+                            <th style="width: 20px;">✎</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Product rows will be inserted here -->
+                    </tbody>
+                </table>
+            </div>
         </div>
 
         <div id="sales-tab" class="tab-content">
