@@ -11,9 +11,10 @@ import threading
 import webview
 from uvicorn import Config, Server
 
-from .db import init_db
-from .models import Product, SalesRecord, ProductCreate, ProductUpdate, ProductInDB, SalesRecordCreate, SalesRecordUpdate, SalesRecordInDB
-from .repository import DataManager
+from config import app_resource_path
+from db import init_db
+from models import Product, SalesRecord, ProductCreate, ProductUpdate, ProductInDB, SalesRecordCreate, SalesRecordUpdate, SalesRecordInDB
+from repository import DataManager
 
 app = FastAPI()
 data_manager = DataManager()
@@ -144,7 +145,7 @@ def main():
 # Serve images from the images directory
 @app.get("/images/{filename}")
 async def serve_image(filename: str):
-    image_path = Path("images") / filename
+    image_path = app_resource_path('images', filename)
     if not image_path.is_file():
         raise HTTPException(status_code=404, detail="Image not found")
     return FileResponse(image_path)
@@ -153,7 +154,7 @@ async def serve_image(filename: str):
 async def upload_image(file: UploadFile = File(...)):
     try:
         # Ensure the 'images' directory exists
-        images_dir = Path("images")
+        images_dir = app_resource_path('images')
         images_dir.mkdir(exist_ok=True)
 
         file_path = images_dir / file.filename
@@ -165,7 +166,7 @@ async def upload_image(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=f"Could not upload file: {e}")
 
 # Mount static files for the frontend
-app.mount("/", StaticFiles(directory="src/frontend", html=True), name="static")
+app.mount("/", StaticFiles(directory=str(app_resource_path('src','frontend')), html=True), name="static")
 
 if __name__ == '__main__':
     main()

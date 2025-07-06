@@ -1,7 +1,7 @@
 from pathlib import Path
 from sqlalchemy import create_engine, func
 from sqlalchemy.orm import sessionmaker, declarative_base
-from .config import DB_PATH
+from config import DB_PATH
 from typing import Optional
 import datetime
 
@@ -20,7 +20,7 @@ def init_db():
     """Initialize the database, create tables if missing, and migrate schema for new columns."""
     # Ensure the database directory exists
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    from . import models  # ensure Product and SalesRecord table metadata is loaded
+    import models  # ensure Product and SalesRecord table metadata is loaded
     Base.metadata.create_all(_engine)
     # Migrate existing table to include new columns
     with _engine.connect() as conn:

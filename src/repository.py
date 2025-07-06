@@ -1,8 +1,8 @@
 from typing import List, Optional, Dict
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from .db import SessionLocal, init_db
-from .models import Product, SalesRecord
+from db import SessionLocal, init_db
+from models import Product, SalesRecord
 from datetime import date
 
 class DataManager:
